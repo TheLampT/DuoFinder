@@ -3,15 +3,21 @@ import React from 'react';
 interface ActionButtonsProps {
   onDislike: () => void;
   onLike: () => void;
+  disabled: boolean;
 }
 
-const ActionButtons: React.FC<ActionButtonsProps> = ({ onDislike, onLike }) => {
+const ActionButtons: React.FC<ActionButtonsProps> = ({ 
+  onDislike, 
+  onLike,
+  disabled 
+}) => {
   return (
     <div className="action-buttons">
       <button 
         className="dislike-button" 
         onClick={onDislike}
         aria-label="Dislike"
+        disabled={disabled}
       >
         ✖️
       </button>
@@ -19,6 +25,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onDislike, onLike }) => {
         className="like-button" 
         onClick={onLike}
         aria-label="Like"
+        disabled={disabled}
       >
         ❤️
       </button>

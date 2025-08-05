@@ -1,26 +1,35 @@
 'use client';
 
 import React, { useState } from 'react';
-import SwipeCard from '@/components/SwipeCard';
+import SwipeCard from '@/components/SwipeCard'
 import ActionButtons from '@/components/ActionButtons';
 import { profiles } from '@/lib/mockData';
 
 const DuoFinder: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
   
   const handleSwipe = (direction: 'left' | 'right') => {
+    if (isSwiping) return;
+    
+    setIsSwiping(true);
     console.log(`Swiped ${direction} on profile ${profiles[currentIndex].id}`);
-    setCurrentIndex(prevIndex => prevIndex + 1);
+    
+    // Simular tiempo de animación
+    setTimeout(() => {
+      setCurrentIndex(prevIndex => prevIndex + 1);
+      setIsSwiping(false);
+    }, 300);
   };
 
   const handleLike = () => {
-    if (currentIndex < profiles.length) {
+    if (currentIndex < profiles.length && !isSwiping) {
       handleSwipe('right');
     }
   };
 
   const handleDislike = () => {
-    if (currentIndex < profiles.length) {
+    if (currentIndex < profiles.length && !isSwiping) {
       handleSwipe('left');
     }
   };
@@ -48,6 +57,7 @@ const DuoFinder: React.FC = () => {
       <ActionButtons 
         onDislike={handleDislike} 
         onLike={handleLike} 
+        disabled={isSwiping || currentIndex >= profiles.length}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Profile } from '@/lib/mockData';
+import styles from '@/styles/SwipeCard.module.css';
 
 interface SwipeCardProps {
   profile: Profile;
@@ -12,13 +13,18 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ profile, onSwipe }) => {
   const [isDragging, setIsDragging] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Handle mouse/touch start
+  // Handle beggining of drag
   const handleStart = (clientX: number, clientY: number) => {
     setStartPos({ x: clientX, y: clientY });
     setIsDragging(true);
+    
+    // Remove transition during drag
+    if (cardRef.current) {
+      cardRef.current.style.transition = 'none';
+    }
   };
 
-  // Handle dragging
+  // Handle movement during drag
   const handleMove = (clientX: number, clientY: number) => {
     if (!isDragging) return;
     
@@ -26,7 +32,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ profile, onSwipe }) => {
     const y = clientY - startPos.y;
     setPosition({ x, y });
     
-    // Add rotation based on swipe direction
+    // Add rotation based on position
     const rotate = x * 0.05;
     if (cardRef.current) {
       cardRef.current.style.transform = `translate(${x}px, ${y}px) rotate(${rotate}deg)`;
@@ -38,12 +44,12 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ profile, onSwipe }) => {
     if (!isDragging) return;
     setIsDragging(false);
     
-    // Determine if swipe was significant enough
+    // Was drag enough
     const threshold = 100;
     if (Math.abs(position.x) > threshold) {
       onSwipe(position.x > 0 ? 'right' : 'left');
     } else {
-      // Return to original position
+      // Back to original position
       setPosition({ x: 0, y: 0 });
       if (cardRef.current) {
         cardRef.current.style.transform = 'translate(0px, 0px) rotate(0deg)';
@@ -57,12 +63,12 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ profile, onSwipe }) => {
     }
   };
 
-  // Mouse event handlers
+  // Mouse Events
   const onMouseDown = (e: React.MouseEvent) => handleStart(e.clientX, e.clientY);
   const onMouseMove = (e: React.MouseEvent) => handleMove(e.clientX, e.clientY);
   const onMouseUp = () => handleEnd();
   
-  // Touch event handlers
+  // Touch Events
   const onTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
     handleStart(touch.clientX, touch.clientY);
@@ -78,7 +84,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ profile, onSwipe }) => {
   return (
     <div
       ref={cardRef}
-      className="swipe-card"
+      className={styles.swipeCard}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
@@ -87,19 +93,19 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ profile, onSwipe }) => {
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      <div className="card-content">
+      <div className={styles.cardContent}>
         <div 
-          className="profile-image"
+          className={styles.profileImage}
           style={{ backgroundImage: `url(${profile.image})` }}
         />
         
-        <div className="profile-info">
+        <div className={styles.profileInfo}>
           <h2>{profile.name}, {profile.age}</h2>
           <p>{profile.bio}</p>
           
-          <div className="interests">
+          <div className={styles.interests}>
             {profile.interests.map((interest, index) => (
-              <span key={index} className="interest-tag">{interest}</span>
+              <span key={index} className={styles.interestTag}>{interest}</span>
             ))}
           </div>
         </div>
