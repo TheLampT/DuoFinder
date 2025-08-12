@@ -31,7 +31,7 @@ Sigue estos pasos para instalar y ejecutar el proyecto en tu máquina local:
 
 1. **Clonar el repositorio**:
    ```bash
-   git clone https://github.com/tu-usuario/DuoFinder-frontend.git
+   git clone https://github.com/TheLampT/DuoFinder.git
    cd DuoFinder-frontend
 
 2. **Instalar dependencias**:
@@ -52,7 +52,7 @@ Crea un archivo .env.local en la raíz del proyecto:
 Visita http://localhost:3000 para ver la aplicación.
 
 # Estructura del Proyecto
-    ```text
+    ```
     DuoFinder-frontend/
     ├── app/                  # Rutas de la aplicación (Next.js App Router)
     │   ├── layout.tsx        # Layout principal
