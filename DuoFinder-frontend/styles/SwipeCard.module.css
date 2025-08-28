@@ -1,5 +1,5 @@
 .swipeCard {
-  position: absolute;
+  position: relative;
   width: 100%;
   max-width: 350px;
   height: 75vh;
@@ -7,9 +7,10 @@
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   cursor: grab;
-  touch-action: none; /* Prevenir scroll durante arrastre */
+  touch-action: none;
   display: flex;
   flex-direction: column;
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .swipeCard:active {
@@ -24,16 +25,18 @@
 }
 
 .profileImage {
-  flex: 1; /* Ocupa todo el espacio disponible */
+  flex: 1;
   background-size: cover;
   background-position: center;
-  min-height: 60%; /* Mínimo 60% de altura para la imagen */
+  min-height: 60%;
+  transition: transform 0.3s ease;
 }
 
 .profileInfo {
   padding: 20px;
   background: white;
-  flex-shrink: 0; /* Prevenir que se encoja */
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
 }
 
 .profileInfo h2 {
@@ -59,4 +62,48 @@
   padding: 5px 12px;
   border-radius: 20px;
   font-size: 0.85rem;
+  transition: transform 0.2s ease;
+}
+
+.interestTag:hover {
+  transform: translateY(-2px);
+}
+
+/* Enhanced swipe animations */
+.swipingRight {
+  animation: swipeRight 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important;
+}
+
+.swipingLeft {
+  animation: swipeLeft 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important;
+}
+
+@keyframes swipeRight {
+  0% {
+    transform: translate(var(--current-x, 0px), var(--current-y, 0px)) rotate(var(--current-rotate, 0deg));
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+    transform: translate(200px, 50px) rotate(15deg);
+  }
+  100% {
+    transform: translate(800px, 100px) rotate(30deg);
+    opacity: 0;
+  }
+}
+
+@keyframes swipeLeft {
+  0% {
+    transform: translate(var(--current-x, 0px), var(--current-y, 0px)) rotate(var(--current-rotate, 0deg));
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+    transform: translate(-200px, 50px) rotate(-15deg);
+  }
+  100% {
+    transform: translate(-800px, 100px) rotate(-30deg);
+    opacity: 0;
+  }
 }
