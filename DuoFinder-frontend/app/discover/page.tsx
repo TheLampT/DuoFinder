@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import SwipeCard from '@/components/SwipeCard';
 import ActionButtons from '@/components/ActionButtons';
 import { profiles } from '@/lib/mockData';
-import styles from './../styles/page.module.css'; // Create this file for page-specific styles
+import styles from './../../styles/page.module.css'; // Create this file for page-specific styles
 
 const DuoFinder: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
