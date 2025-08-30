@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './../styles/ActionButtons.module.css'; // Create this file
+import styles from './../styles/components/ActionButtons.module.css';
 
 interface ActionButtonsProps {
   onDislike: () => void;

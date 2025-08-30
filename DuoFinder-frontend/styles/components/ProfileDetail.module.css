@@ -1,0 +1,200 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal {
+  background: white;
+  border-radius: 20px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: slideUp 0.3s ease;
+}
+
+.closeButton {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.profileHeader {
+  position: relative;
+  padding-bottom: 20px;
+}
+
+.profileImage {
+  height: 300px;
+  background-size: cover;
+  background-position: center;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.profileBasicInfo {
+  padding: 20px;
+  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+  color: white;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.profileBasicInfo h2 {
+  margin: 0 0 5px 0;
+  font-size: 1.8rem;
+}
+
+.detailsSection,
+.interestsSection {
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.detailsSection h3,
+.interestsSection h3 {
+  margin: 0 0 15px 0;
+  color: #333;
+}
+
+.interests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.interestTag {
+  background-color: #e0e7ff;
+  color: #4f46e5;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+}
+
+.actionButtons {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  padding: 25px;
+}
+
+.dislikeButton, .likeButton {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: none;
+  font-size: 1.8rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.likeButton:hover, .dislikeButton:hover {
+  transform: scale(1.15);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.likeButton:active, .dislikeButton:active {
+  transform: scale(0.95);
+}
+
+.dislikeButton {
+  background-color: #fff;
+  color: #fd5c63;
+  border: 2px solid #fd5c63;
+}
+
+.dislikeButton:hover {
+  background-color: #fd5c63;
+  color: white;
+}
+
+.likeButton {
+  background-color: #fff;
+  color: #4ade80;
+  border: 2px solid #4ade80;
+}
+
+.likeButton:hover {
+  background-color: #4ade80;
+  color: white;
+}
+
+/* Add animation for button clicks */
+@keyframes buttonClick {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+.likeButton:active, .dislikeButton:active {
+  animation: buttonClick 0.3s ease;
+}
+
+.dislikeButton {
+  background-color: #fff;
+  color: #fd5c63;
+  border: 2px solid #fd5c63;
+}
+
+.likeButton {
+  background-color: #fff;
+  color: #4ade80;
+  border: 2px solid #4ade80;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .modal {
+    max-width: 100%;
+    border-radius: 0;
+    max-height: 100vh;
+  }
+  
+  .profileImage {
+    height: 250px;
+  }
+}
