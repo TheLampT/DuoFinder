@@ -14,6 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from dotenv import load_dotenv
+from urllib.parse import quote_plus
 
 # Routers
 from app.routers import auth, user, match, chat, community
@@ -41,7 +42,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")  # ojo: ajustado a /
 app = FastAPI(title="DuoFinder API")
 
 # =========================
-# MODELOS ORM (según tu diagrama)
+# MODELOS ORM (segun tu diagrama)
 # =========================
 class User(Base):
     __tablename__ = "User"
@@ -57,7 +58,6 @@ class User(Base):
     Discord = Column(String(120))
     Tracker = Column(String(200))
     IsActive = Column(Boolean, nullable=False, server_default="1")
-    CreatedAt = Column(DateTime, nullable=False, server_default=func.getdate())
 
     images = relationship("UserImages", back_populates="user", cascade="all, delete-orphan")
     skills = relationship("UserGamesSkill", back_populates="user", cascade="all, delete-orphan")
@@ -264,6 +264,11 @@ async def get_current_user(
 # =========================
 # INCLUDE ROUTERS (al final)
 # =========================
+
+@app.get("/")
+def read_root():
+    return {"message": "DuoFinder API funcionando ✅"}
+
 app.include_router(auth.router,      prefix="/auth",        tags=["auth"])
 app.include_router(user.router,      prefix="/users",       tags=["users"])
 app.include_router(match.router,     prefix="/matches",     tags=["matches"])
