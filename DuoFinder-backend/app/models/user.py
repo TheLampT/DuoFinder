@@ -14,3 +14,4 @@ class User(Base):
     Password = Column(String(255), nullable=False)
     BirthDate = Column(Date, nullable=False)
     IsActive = Column(Boolean, nullable=False, server_default="1")
+    Bio = Column(String(500), nullable=True)
