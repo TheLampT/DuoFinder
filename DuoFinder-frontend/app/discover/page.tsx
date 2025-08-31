@@ -113,12 +113,6 @@ const Discover: React.FC = () => {
         )}
       </div>
 
-      <ActionButtons 
-        onDislike={handleDislike} 
-        onLike={handleLike} 
-        disabled={isSwiping || currentIndex >= profiles.length}
-      />
-
       {/* Profile Detail Modal */}
       {selectedProfile && (
         <ProfileDetail
