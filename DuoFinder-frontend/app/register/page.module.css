@@ -9,12 +9,12 @@
 }
 
 .page{
-  min-height:100vh;
+  min-height:100svh;     /* 100vh en mobile puede dar saltos; svh es mejor */
   display:grid;
   place-items:center;
   padding:16px;
-  background:var(--bg);
-  color:var(--text);
+  background: transparent;   /* <- IMPORTANTE: nada de fondo acá */
+  color: inherit;
 }
 
 .card{
