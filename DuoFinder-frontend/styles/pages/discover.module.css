@@ -1,0 +1,120 @@
+.discoverContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 400px;
+  height: 100vh;
+  padding: 20px;
+  background-color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  padding: 15px 0;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 20px;
+}
+
+.header h1 {
+  font-size: 1.8rem;
+  color: #ff6b6b;
+}
+
+.cardsContainer {
+  flex: 1;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.currentCardWrapper {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+  /* Current card should be fully opaque */
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.currentCardWrapper.animating {
+  /* Keep current card fully opaque during animation */
+  opacity: 1;
+}
+
+.nextCardWrapper {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+  /* Next card is slightly smaller and transparent */
+  transform: scale(0.95);
+  opacity: 0.7;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.nextCardWrapper.animating {
+  /* Next card becomes slightly larger and less transparent during animation */
+  transform: scale(1.0);
+  opacity: 1.0;
+}
+
+.noMoreProfiles {
+  text-align: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  color: white;
+  z-index: 3;
+  /* Initially hidden */
+  opacity: 0;
+  /* Apply the fade-in animation */
+  animation: fadeIn 0.8s ease forwards;
+}
+
+.noMoreProfiles h2 {
+  margin-bottom: 10px;
+  font-size: 1.8rem;
+}
+
+.noMoreProfiles p {
+  opacity: 0.9;
+  font-size: 1.1rem;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scale animation for when a card becomes active */
+@keyframes scaleUp {
+  from {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

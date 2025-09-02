@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from './../styles/components/ActionButtons.module.css';
 
 interface ActionButtonsProps {
   onDislike: () => void;
@@ -12,9 +13,9 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
   disabled 
 }) => {
   return (
-    <div className="action-buttons">
+    <div className={styles.actionButtons}>
       <button 
-        className="dislike-button" 
+        className={styles.dislikeButton} 
         onClick={onDislike}
         aria-label="Dislike"
         disabled={disabled}
@@ -22,7 +23,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         ✖️
       </button>
       <button 
-        className="like-button" 
+        className={styles.likeButton} 
         onClick={onLike}
         aria-label="Like"
         disabled={disabled}

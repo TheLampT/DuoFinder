@@ -20,6 +20,16 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session
 # Configuración (.env)
 # ───────────────────────────
 from dotenv import load_dotenv
+from urllib.parse import quote_plus
+
+# Routers
+from app.routers import auth, user, match, chat, community
+
+from app.models.user import User
+
+# =========================
+# CONFIG
+# =========================
 load_dotenv()
 
 SECRET_KEY  = getenv("SECRET_KEY", "dev-inseguro")
@@ -53,6 +63,47 @@ engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=1800, futu
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 Base = declarative_base()
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")  # ojo: ajustado a /auth/login
+
+# =========================
+# APP (solo una vez)
+# =========================
+app = FastAPI(title="DuoFinder API")
+
+
+# =========================
+# SCHEMAS (Pydantic)
+# =========================
+class UserCreate(BaseModel):
+    email: EmailStr
+    username: str
+    password: str
+
+
+class UserPublic(BaseModel):
+    ID: int
+    Mail: EmailStr
+    Username: str
+    Bio: Optional[str] = None
+    BirthDate: Optional[datetime] = None
+    Location: Optional[str] = None
+    Discord: Optional[str] = None
+    Tracker: Optional[str] = None
+    IsActive: bool
+
+    class Config:
+        from_attributes = True
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+# =========================
+# UTILS
+# =========================
 def get_db() -> Session:
     db = SessionLocal()
     try:
@@ -192,6 +243,22 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     token = create_access_token({"sub": user.Mail})
     return Token(access_token=token)
 
-@app.get("/me", response_model=UserPublic)
-def me(current_user: User = Depends(get_current_user)):
-    return current_user
+    user = get_user_by_email(db, sub)
+    if user is None or not user.IsActive:
+        raise exc
+    return user
+
+
+# =========================
+# INCLUDE ROUTERS (al final)
+# =========================
+
+@app.get("/")
+def read_root():
+    return {"message": "DuoFinder API funcionando ✅"}
+
+app.include_router(auth.router,      prefix="/auth",        tags=["auth"])
+app.include_router(user.router,      prefix="/users",       tags=["users"])
+app.include_router(match.router,     prefix="/matches",     tags=["matches"])
+app.include_router(chat.router,      prefix="/chats",       tags=["chats"])
+app.include_router(community.router, prefix="/communities", tags=["communities"])
