@@ -3,8 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import SwipeCard from '@/components/SwipeCard';
 import ProfileDetail from '@/components/ProfileDetail';
-import ActionButtons from '@/components/ActionButtons';
-import { profiles, Profile } from '@/lib/mockData';
+import { profiles, Profile } from '@/test/mock/mockData';
 import styles from '@/styles/pages/discover.module.css';
 
 const Discover: React.FC = () => {

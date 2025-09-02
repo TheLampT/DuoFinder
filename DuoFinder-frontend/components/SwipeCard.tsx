@@ -1,5 +1,5 @@
 import React, { useState, useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
-import { Profile } from '@/lib/mockData';
+import { Profile } from '@/test/mock/mockData';
 import styles from '@/styles/components/SwipeCard.module.css';
 
 interface SwipeCardProps {
@@ -169,15 +169,15 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ profile, onSwip
         />
         
         <div className={styles.profileInfo}>
-          <h2>{profile.name}, {profile.age}</h2>
+          <h2>{profile.username}, {profile.age}</h2>
           <p>{profile.bio}</p>
           
           <div className={styles.interests}>
-            {profile.interests.slice(0, 3).map((interest, index) => (
-              <span key={index} className={styles.interestTag}>{interest}</span>
+            {profile.gameSkill.slice(0, 3).map((gameSkill, index) => (
+              <span key={index} className={styles.interestTag}>{gameSkill.game}</span>
             ))}
-            {profile.interests.length > 3 && (
-              <span className={styles.moreInterests}>+{profile.interests.length - 3} more</span>
+            {profile.gameSkill.length > 3 && (
+              <span className={styles.moreInterests}>+{profile.gameSkill.length - 3} more</span>
             )}
           </div>
         </div>
