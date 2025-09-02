@@ -14,7 +14,7 @@ class User(Base):
     Username = Column(String(100), unique=True, index=True, nullable=False)
     Bio = Column(String(500))
     BirthDate = Column(DateTime)
-    #Location = Column(String(120))
+    Server = Column(String(100))
     Discord = Column(String(120))
     Tracker = Column(String(200))
     IsActive = Column(Boolean, nullable=False, server_default="1")

@@ -57,7 +57,7 @@ def delete_my_account(
     db.commit()
     return {"message": "Cuenta eliminada exitosamente"}
 
-@router.get("/user/{user_id}")
+@router.get("/{user_id}")
 def get_user_profile(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.ID == user_id).first()
     if not user:
@@ -87,6 +87,7 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
         "age": calculate_age(user.BirthDate),
         "bio": user.Bio or "",
         "image": image_url,
+        "server": user.Server,
         "discord": user.Discord,
         "gameSkill": game_skill
     }
