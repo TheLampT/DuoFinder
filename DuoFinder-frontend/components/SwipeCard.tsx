@@ -1,5 +1,5 @@
 import React, { useState, useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
-import { Profile } from '@/lib/mockData';
+import { Profile } from '@/test/mock/mockData';
 import styles from '@/styles/components/SwipeCard.module.css';
 
 interface SwipeCardProps {

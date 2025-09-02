@@ -518,3 +518,14 @@
     font-size: 11px;
   }
 }
+
+.gameSkillsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.gameSkillItem {
+  width: 100%;
+}

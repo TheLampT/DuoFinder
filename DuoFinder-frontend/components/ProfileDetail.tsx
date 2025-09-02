@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Profile } from '@/lib/mockData';
+import { Profile } from '@/test/mock/mockData';
 import styles from '@/styles/components/ProfileDetail.module.css';
 
 interface ProfileDetailProps {
@@ -96,7 +96,7 @@ const ProfileDetail: React.FC<ProfileDetailProps> = ({
         
         <div className={styles.interestsSection}>
           <h3>Gaming Skills</h3>
-          <div className={styles.gameSkills}>
+          <div className={styles.gameSkillsGrid}>
             {profile.gameSkill.map((gameSkill, index) => (
               <div key={index} className={styles.gameSkillItem}>
                 <div className={styles.gameInfo}>
@@ -105,9 +105,6 @@ const ProfileDetail: React.FC<ProfileDetailProps> = ({
                     {renderRankedIcon(gameSkill.isRanked)}
                   </div>
                   <div className={styles.skillLevel}>{gameSkill.skill}</div>
-                </div>
-                <div className={styles.playType}>
-                  {gameSkill.isRanked ? 'Ranked' : 'Casual'}
                 </div>
               </div>
             ))}
