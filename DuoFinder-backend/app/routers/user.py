@@ -1,65 +1,92 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from datetime import date
-from typing import List, Optional
 
 from app.db.connection import get_db
 from app.models.user import User
+from app.models.user_images import UserImages
+from app.models.user_game_skill import UserGamesSkill
+from app.models.games import Games
 from app.routers.auth import get_current_user
-from pydantic import BaseModel
 
 router = APIRouter()
 
-# ----- SCHEMAS DE RESPUESTA -----
-class GameSkillOut(BaseModel):
-    game: str
-    skill: str
-    isRanked: bool
-
-class UserProfileOut(BaseModel):
-    id: int
-    username: str
-    age: int
-    bio: Optional[str] = None
-    image: Optional[str] = None
-    discord: Optional[str] = None
-    gameSkill: List[GameSkillOut]
-
-# ----- ENDPOINT /me -----
-@router.get("/me", response_model=UserProfileOut)
-def get_my_profile(
-    current_user: User = Depends(get_current_user)
-):
-    # Calcular edad
+def calculate_age(birthdate: date) -> int:
     today = date.today()
-    birthdate = current_user.BirthDate
-    age = today.year - birthdate.year - (
-        (today.month, today.day) < (birthdate.month, birthdate.day)
-    )
+    return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
 
-    # Imagen primaria
-    primary_image = None
-    for img in current_user.images:
-        if img.IsPrimary:
-            primary_image = img.ImageURL
-            break
+class UserProfile(BaseModel):
+    username: str
+    email: str
+    bio: str = ""
 
-    # Juegos + skill
-    game_skill = []
-    for gs in current_user.games:
-        if gs.game and gs.game.Rank:
-            game_skill.append({
-                "game": gs.game.GameName,
-                "skill": gs.game.Rank.Rank,
-                "isRanked": gs.IsRanked
-            })
+class UserProfileOut(UserProfile):
+    age: int
+
+@router.get("/me", response_model=UserProfileOut)
+def get_my_profile(current_user: User = Depends(get_current_user)):
+    return {
+        "username": current_user.Username,
+        "email": current_user.Mail,
+        "bio": current_user.Bio or "",
+        "age": calculate_age(current_user.BirthDate),
+    }
+
+@router.put("/me")
+def update_profile(
+    profile: UserProfile,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    current_user.Username = profile.username
+    current_user.Mail = profile.email
+    current_user.Bio = profile.bio
+
+    db.commit()
+    db.refresh(current_user)
+
+    return {"message": "Perfil actualizado", "new_profile": profile}
+
+@router.delete("/me")
+def delete_my_account(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    db.delete(current_user)
+    db.commit()
+    return {"message": "Cuenta eliminada exitosamente"}
+
+@router.get("/user/{user_id}")
+def get_user_profile(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.ID == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    image = db.query(UserImages).filter(
+        UserImages.UserID == user_id
+    ).first()
+    image_url = image.Url if image else None
+
+    skills = db.query(UserGamesSkill, Games).join(Games, UserGamesSkill.GameID == Games.ID).filter(
+        UserGamesSkill.UserID == user_id
+    ).all()
+
+    game_skill = [
+        {
+            "game": game.Name,
+            "skill": skill.SkillLevel,
+            "isRanked": skill.IsRanked
+        }
+        for skill, game in skills
+    ]
 
     return {
-        "id": current_user.ID,
-        "username": current_user.Username,
-        "age": age,
-        "bio": current_user.Bio,
-        "image": primary_image,
-        "discord": current_user.Discord,
+        "id": str(user.ID),
+        "username": user.Username,
+        "age": calculate_age(user.BirthDate),
+        "bio": user.Bio or "",
+        "image": image_url,
+        "discord": user.Discord,
         "gameSkill": game_skill
     }

@@ -19,6 +19,8 @@ from urllib.parse import quote_plus
 # Routers
 from app.routers import auth, user, match, chat, community
 
+from app.models.user import User
+
 # =========================
 # CONFIG
 # =========================
@@ -40,126 +42,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")  # ojo: ajustado a /
 # APP (solo una vez)
 # =========================
 app = FastAPI(title="DuoFinder API")
-
-# =========================
-# MODELOS ORM (segun tu diagrama)
-# =========================
-class User(Base):
-    __tablename__ = "User"
-    __table_args__ = {"schema": "dbo"}
-
-    ID = Column(Integer, primary_key=True, index=True)
-    Mail = Column(String(255), unique=True, index=True, nullable=False)
-    Password = Column(String(255), nullable=False)
-    Username = Column(String(100), unique=True, index=True, nullable=False)
-    Bio = Column(String(500))
-    BirthDate = Column(DateTime)
-    Location = Column(String(120))
-    Discord = Column(String(120))
-    Tracker = Column(String(200))
-    IsActive = Column(Boolean, nullable=False, server_default="1")
-
-    images = relationship("UserImages", back_populates="user", cascade="all, delete-orphan")
-    skills = relationship("UserGamesSkill", back_populates="user", cascade="all, delete-orphan")
-    sent_messages = relationship("Chat", back_populates="sender", foreign_keys="Chat.SenderID")
-
-
-class Matches(Base):
-    __tablename__ = "Matches"
-    __table_args__ = {"schema": "dbo"}
-
-    ID = Column(Integer, primary_key=True, index=True)
-    UserID1 = Column(Integer, ForeignKey("dbo.User.ID"), nullable=False)
-    UserID2 = Column(Integer, ForeignKey("dbo.User.ID"), nullable=False)
-    MatchDate = Column(DateTime, server_default=func.getdate())
-    Status = Column(String(50))
-    IsRanked = Column(Boolean, nullable=False, server_default="0")
-
-    chat = relationship("Chat", back_populates="match", uselist=False)
-
-
-class Chat(Base):
-    __tablename__ = "Chat"
-    __table_args__ = {"schema": "dbo"}
-
-    ID = Column(Integer, primary_key=True, index=True)
-    MatchesID = Column(Integer, ForeignKey("dbo.Matches.ID"), nullable=False)
-    SenderID = Column(Integer, ForeignKey("dbo.User.ID"), nullable=False)
-    ContentChat = Column(Text, nullable=False)
-    CreatedDate = Column(DateTime, nullable=False, server_default=func.getdate())
-    Status = Column(String(50))
-    ReadChat = Column(Boolean, nullable=False, server_default="0")
-
-    match = relationship("Matches", back_populates="chat")
-    sender = relationship("User", back_populates="sent_messages")
-
-
-class UserImages(Base):
-    __tablename__ = "User_Images"
-    __table_args__ = {"schema": "dbo"}
-
-    ID = Column(Integer, primary_key=True, index=True)
-    UserID = Column(Integer, ForeignKey("dbo.User.ID"), nullable=False)
-    ImageURL = Column(String(500), nullable=False)
-    IsPrimary = Column(Boolean, nullable=False, server_default="0")
-
-    user = relationship("User", back_populates="images")
-
-
-class Games(Base):
-    __tablename__ = "Games"
-    __table_args__ = {"schema": "dbo"}
-
-    ID = Column(Integer, primary_key=True, index=True)
-    GenreId = Column(Integer, ForeignKey("dbo.MainGenre.ID"))
-    RankId = Column(Integer, ForeignKey("dbo.Ranks.ID"))
-    GameName = Column(String(200), nullable=False)
-    Description = Column(Text)
-    ReleaseYear = Column(Integer)
-
-
-class MainGenre(Base):
-    __tablename__ = "MainGenre"
-    __table_args__ = {"schema": "dbo"}
-
-    ID = Column(Integer, primary_key=True, index=True)
-    GenreName = Column(String(120), nullable=False, unique=True)
-
-
-class Ranks(Base):
-    __tablename__ = "Ranks"
-    __table_args__ = {"schema": "dbo"}
-
-    ID = Column(Integer, primary_key=True, index=True)
-    Rank = Column(String(120), nullable=False, unique=True)
-
-
-class Tags(Base):
-    __tablename__ = "Tags"
-    __table_args__ = {"schema": "dbo"}
-
-    ID = Column(Integer, primary_key=True, index=True)
-    TagName = Column(String(120), nullable=False, unique=True)
-
-
-class GamesTags(Base):
-    __tablename__ = "Games_Tags"
-    __table_args__ = {"schema": "dbo"}
-
-    GamesID = Column(Integer, ForeignKey("dbo.Games.ID"), primary_key=True)
-    TagsID = Column(Integer, ForeignKey("dbo.Tags.ID"), primary_key=True)
-
-
-class UserGamesSkill(Base):
-    __tablename__ = "User_Games_Skill"
-    __table_args__ = {"schema": "dbo"}
-
-    UserID = Column(Integer, ForeignKey("dbo.User.ID"), primary_key=True)
-    GameID = Column(Integer, ForeignKey("dbo.Games.ID"), primary_key=True)
-    SkillLevel = Column(String(50))
-    IsRanked = Column(Boolean, nullable=False, server_default="0")
-
-    user = relationship("User", back_populates="skills")
 
 
 # =========================

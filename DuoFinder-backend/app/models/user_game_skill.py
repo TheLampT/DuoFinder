@@ -1,14 +1,14 @@
-from sqlalchemy import Column, Integer, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, ForeignKey, Boolean, String
 from sqlalchemy.orm import declarative_base, relationship
 from app.db.connection import Base
 
 
-class UserGameSkill(Base):
+class UserGamesSkill(Base):
     __tablename__ = "User_Games_Skill"
-    UserID = Column(Integer, ForeignKey("User.ID"), primary_key=True)
-    GameID = Column(Integer, ForeignKey("Games.ID"), primary_key=True)
-    SkillLevel = Column(Integer)
-    IsRanked = Column(Boolean)
+    __table_args__ = {"schema": "dbo"}
 
-    user = relationship("User", back_populates="games")
-    game = relationship("Game")  
+    UserID = Column(Integer, ForeignKey("dbo.User.ID"), primary_key=True)
+    GameID = Column(Integer, ForeignKey("dbo.Games.ID"), primary_key=True)
+    SkillLevel = Column(String(50))
+    IsRanked = Column(Boolean, nullable=False, server_default="0")
+
