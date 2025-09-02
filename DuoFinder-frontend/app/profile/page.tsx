@@ -67,9 +67,7 @@ export default function ProfilePage() {
 
     try {
       setSaving(true);
-
       // 🔌 Simulación de "PUT /users/me"
-      // Cuando haya backend, reemplazamos esto por un fetch/axios con withCredentials
       await new Promise((r) => setTimeout(r, 700));
       localStorage.setItem(LS_USER_KEY, JSON.stringify(profile));
       setOk('Cambios guardados (simulado).');
@@ -81,7 +79,6 @@ export default function ProfilePage() {
   }
 
   function onReset() {
-    // Vuelve a lo último guardado (o default si no hay nada)
     const raw = localStorage.getItem(LS_USER_KEY);
     setProfile(raw ? (JSON.parse(raw) as UserProfile) : DEFAULT_USER);
     setOk(null);
@@ -89,14 +86,19 @@ export default function ProfilePage() {
   }
 
   function onLogout() {
-    // Simulación de logout: limpiamos localStorage
     localStorage.removeItem(LS_USER_KEY);
     setProfile(DEFAULT_USER);
     setOk('Sesión cerrada (simulada).');
     setError(null);
   }
 
-  if (loading) return <div className={styles.page}><div className={styles.card}>Cargando…</div></div>;
+  if (loading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.card}>Cargando…</div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -110,20 +112,20 @@ export default function ProfilePage() {
         {ok && <div className={styles.alertOk}>{ok}</div>}
 
         <form className={styles.form} onSubmit={onSubmit}>
+          {/* Fila 1: Nombre + Email */}
           <div className={styles.row2}>
             <div className={styles.field}>
-                <label className={styles.label} htmlFor="bio">Bio</label>
-                  <textarea
-                     id="bio"
-                     className={styles.textarea}
-                    rows={4}
-                     maxLength={3000}
-                     placeholder="Contá brevemente qué buscás…"
-                     value={profile.bio ?? ''}
-                     onChange={(e) => onChange('bio', e.target.value)}
-  />
-    </div>
-
+              <label className={styles.label} htmlFor="username">Nombre</label>
+              <input
+                id="username"
+                className={styles.input}
+                type="text"
+                placeholder="Tu nick"
+                value={profile.username}
+                onChange={(e) => onChange('username', e.target.value)}
+                maxLength={32}
+              />
+            </div>
 
             <div className={styles.field}>
               <label className={styles.label} htmlFor="email">Email</label>
@@ -137,6 +139,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {/* Fila 2: Fecha de nacimiento + Discord */}
           <div className={styles.row2}>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="birthdate">Fecha de nacimiento</label>
@@ -162,18 +165,21 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {/* Bio (única) */}
           <div className={styles.field}>
             <label className={styles.label} htmlFor="bio">Bio</label>
             <textarea
               id="bio"
               className={styles.textarea}
-              rows={3}
+              rows={4}
+              maxLength={3000}
               placeholder="Contá brevemente qué buscás…"
               value={profile.bio ?? ''}
               onChange={(e) => onChange('bio', e.target.value)}
             />
           </div>
 
+          {/* Juegos */}
           <div className={styles.field}>
             <label className={styles.label} htmlFor="games">Juegos (separados por coma)</label>
             <input
@@ -186,6 +192,7 @@ export default function ProfilePage() {
             />
           </div>
 
+          {/* Intereses */}
           <div className={styles.field}>
             <label className={styles.label} htmlFor="interests">Intereses (separados por coma)</label>
             <input
@@ -198,14 +205,23 @@ export default function ProfilePage() {
             />
           </div>
 
+          {/* Acciones */}
           <div className={styles.actions}>
             <button className={styles.btn} type="submit" disabled={saving}>
               {saving ? 'Guardando…' : 'Guardar cambios'}
             </button>
-            <button className={`${styles.btn} ${styles.btnOutline}`} type="button" onClick={onReset}>
+            <button
+              className={`${styles.btn} ${styles.btnOutline}`}
+              type="button"
+              onClick={onReset}
+            >
               Deshacer cambios
             </button>
-            <button className={`${styles.btn} ${styles.btnOutline}`} type="button" onClick={onLogout}>
+            <button
+              className={`${styles.btn} ${styles.btnOutline}`}
+              type="button"
+              onClick={onLogout}
+            >
               Cerrar sesión (mock)
             </button>
           </div>
