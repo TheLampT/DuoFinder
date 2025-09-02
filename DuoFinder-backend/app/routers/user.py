@@ -1,50 +1,65 @@
-from fastapi import Depends, HTTPException, status
-from app.routers.auth import get_current_user  # ajustá el import según tu estructura
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.db.connection import get_db  # si usás SQLAlchemy
-from app.models.user import User  # tu modelo real de usuarios
-from pydantic import BaseModel, EmailStr
-from fastapi import APIRouter
+from datetime import date
+from typing import List, Optional
+
+from app.db.connection import get_db
+from app.models.user import User
+from app.routers.auth import get_current_user
+from pydantic import BaseModel
 
 router = APIRouter()
 
-class UserProfile(BaseModel):
+# ----- SCHEMAS DE RESPUESTA -----
+class GameSkillOut(BaseModel):
+    game: str
+    skill: str
+    isRanked: bool
+
+class UserProfileOut(BaseModel):
+    id: int
     username: str
-    email: str
-    bio: str = ""
+    age: int
+    bio: Optional[str] = None
+    image: Optional[str] = None
+    discord: Optional[str] = None
+    gameSkill: List[GameSkillOut]
 
-@router.get("/me", response_model=UserProfile)
-def get_my_profile(current_user: User = Depends(get_current_user)):
+# ----- ENDPOINT /me -----
+@router.get("/me", response_model=UserProfileOut)
+def get_my_profile(
+    current_user: User = Depends(get_current_user)
+):
+    # Calcular edad
+    today = date.today()
+    birthdate = current_user.BirthDate
+    age = today.year - birthdate.year - (
+        (today.month, today.day) < (birthdate.month, birthdate.day)
+    )
+
+    # Imagen primaria
+    primary_image = None
+    for img in current_user.images:
+        if img.IsPrimary:
+            primary_image = img.ImageURL
+            break
+
+    # Juegos + skill
+    game_skill = []
+    for gs in current_user.games:
+        if gs.game and gs.game.Rank:
+            game_skill.append({
+                "game": gs.game.GameName,
+                "skill": gs.game.Rank.Rank,
+                "isRanked": gs.IsRanked
+            })
+
     return {
+        "id": current_user.ID,
         "username": current_user.Username,
-        "email": current_user.Mail,
-        "bio": current_user.Bio or ""
+        "age": age,
+        "bio": current_user.Bio,
+        "image": primary_image,
+        "discord": current_user.Discord,
+        "gameSkill": game_skill
     }
-
-
-@router.put("/me")
-def update_profile(
-    profile: UserProfile,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    current_user.username = profile.username
-    current_user.email = profile.email
-    current_user.bio = profile.bio
-
-    db.commit()
-    db.refresh(current_user)
-
-    return {"message": "Perfil actualizado", "new_profile": profile}
-
-@router.delete("/me")
-def delete_my_account(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    db.delete(current_user)
-    db.commit()
-    return {"message": "Cuenta eliminada exitosamente"}
-
-
-
