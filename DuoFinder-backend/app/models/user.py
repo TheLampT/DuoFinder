@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime
 from sqlalchemy.orm import relationship
 from app.db.connection import Base
-from datetime import datetime
+from datetime import date
 
 
 class User(Base):
@@ -13,7 +13,7 @@ class User(Base):
     Password = Column(String(255), nullable=False)
     Username = Column(String(100), unique=True, index=True, nullable=False)
     Bio = Column(String(500))
-    BirthDate = Column(DateTime)
+    BirthDate = Column(Date)
     Server = Column(String(100))
     Discord = Column(String(120))
     Tracker = Column(String(200))

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
-from datetime import date
+from datetime import date, datetime
 
 from app.db.connection import get_db
 from app.models.user import User
@@ -13,7 +13,7 @@ from app.routers.auth import get_current_user
 router = APIRouter()
 
 def calculate_age(birthdate: date) -> int:
-    today = date.today()
+    today = datetime.today()
     return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
 
 class UserProfile(BaseModel):
@@ -39,21 +39,45 @@ def update_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    current_user.Username = profile.username
-    current_user.Mail = profile.email
-    current_user.Bio = profile.bio
+    # Actualiza solo si se pasó un valor
+    if profile.username is not None:
+        current_user.Username = profile.username
+    if profile.email is not None:
+        current_user.Mail = profile.email
+    if profile.bio is not None:
+        current_user.Bio = profile.bio
+    if profile.server is not None:
+        current_user.Server = profile.server
+    if profile.discord is not None:
+        current_user.Discord = profile.discord
+    if profile.tracker is not None:
+        current_user.Tracker = profile.tracker
+    if profile.birthdate is not None:
+        current_user.BirthDate = profile.birthdate
 
     db.commit()
     db.refresh(current_user)
 
-    return {"message": "Perfil actualizado", "new_profile": profile}
+    return {
+        "message": "Perfil actualizado",
+        "new_profile": {
+            "username": current_user.Username,
+            "email": current_user.Mail,
+            "bio": current_user.Bio,
+            "server": current_user.Server,
+            "discord": current_user.Discord,
+            "tracker": current_user.Tracker,
+            "birthdate": str(current_user.BirthDate),
+        }
+    }
+
 
 @router.delete("/me")
 def delete_my_account(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    db.delete(current_user)
+    current_user.IsActive = False
     db.commit()
     return {"message": "Cuenta eliminada exitosamente"}
 

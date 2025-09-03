@@ -1,4 +1,4 @@
-# main.py  —  DuoFinder (single file)
+# main.py  —  DuoFinder 
 
 from datetime import datetime, timedelta
 from typing import Optional
@@ -12,8 +12,9 @@ from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import (
     create_engine, select, func, text as sql_text,
-    Column, Integer, String, DateTime, Boolean
+    Column, Integer, String, Date, Boolean, DateTime
 )
+from datetime import date
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 # ───────────────────────────
@@ -66,39 +67,10 @@ Base = declarative_base()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")  # ojo: ajustado a /auth/login
 
-# =========================
-# APP (solo una vez)
-# =========================
+
 app = FastAPI(title="DuoFinder API")
 
 
-# =========================
-# SCHEMAS (Pydantic)
-# =========================
-class UserCreate(BaseModel):
-    email: EmailStr
-    username: str
-    password: str
-
-
-class UserPublic(BaseModel):
-    ID: int
-    Mail: EmailStr
-    Username: str
-    Bio: Optional[str] = None
-    BirthDate: Optional[datetime] = None
-    Location: Optional[str] = None
-    Discord: Optional[str] = None
-    Tracker: Optional[str] = None
-    IsActive: bool
-
-    class Config:
-        from_attributes = True
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
 
 
 # =========================
@@ -111,26 +83,6 @@ def get_db() -> Session:
     finally:
         db.close()
 
-# ───────────────────────────
-# Modelo ORM (dbo.User)
-# ───────────────────────────
-class User(Base):
-    __tablename__ = "User"
-    __table_args__ = {"schema": "dbo"}
-
-    ID         = Column(Integer, primary_key=True, index=True)
-    Mail       = Column(String(255), unique=True, index=True, nullable=False)
-    Password   = Column(String(255), nullable=False)
-    Username   = Column(String(100), unique=True, index=True, nullable=False)
-    Bio        = Column(String(500))
-    BirthDate  = Column(DateTime)
-    Location   = Column(String(120))
-    Discord    = Column(String(120))
-    Tracker    = Column(String(200))
-    IsActive   = Column(Boolean, nullable=False, server_default="1")
-    CreatedAt  = Column(DateTime, nullable=False, server_default=func.getdate())
-
-# Base.metadata.create_all(bind=engine)  # solo para POC. En prod: Alembic.
 
 # ───────────────────────────
 # Seguridad (hash y JWT)
@@ -174,36 +126,12 @@ async def get_current_user(
 # ───────────────────────────
 # Schemas Pydantic
 # ───────────────────────────
-class RegisterIn(BaseModel):
-    email: EmailStr
-    username: str
-    password: str
-
-class UserPublic(BaseModel):
-    ID: int
-    Mail: EmailStr
-    Username: str
-    IsActive: bool
-    class Config:
-        from_attributes = True  # pydantic v2
 
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
-# ───────────────────────────
-# FastAPI
-# ───────────────────────────
-app = FastAPI(title="DuoFinder API (single-file)")
 
-@app.get("/health")
-def health():
-    try:
-        with engine.connect() as conn:
-            conn.execute(sql_text("SELECT 1"))
-        return {"ok": True}
-    except Exception as e:
-        raise HTTPException(500, f"DB error: {e}")
 
 # Helpers de acceso
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
@@ -212,50 +140,7 @@ def get_user_by_email(db: Session, email: str) -> Optional[User]:
 def get_user_by_username(db: Session, username: str) -> Optional[User]:
     return db.execute(select(User).where(User.Username == username)).scalar_one_or_none()
 
-# ───────── Endpoints ─────────
-@app.post("/register", response_model=UserPublic, status_code=201)
-def register(user_in: RegisterIn, db: Session = Depends(get_db)):
-    if get_user_by_email(db, user_in.email):
-        raise HTTPException(400, "Email ya registrado")
-    if get_user_by_username(db, user_in.username):
-        raise HTTPException(400, "Username ya registrado")
 
-    user = User(
-        Mail=user_in.email,
-        Username=user_in.username,
-        Password=hash_password(user_in.password),
-        IsActive=True,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
-
-@app.post("/login", response_model=Token)
-def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # Permitimos login por email o username en "username"
-    user = get_user_by_email(db, form.username) or get_user_by_username(db, form.username)
-    if not user or not verify_password(form.password, user.Password):
-        raise HTTPException(400, "Credenciales inválidas")
-    if not user.IsActive:
-        raise HTTPException(403, "Usuario inactivo")
-
-    token = create_access_token({"sub": user.Mail})
-    return Token(access_token=token)
-
-    user = get_user_by_email(db, sub)
-    if user is None or not user.IsActive:
-        raise exc
-    return user
-
-
-# =========================
-# INCLUDE ROUTERS (al final)
-# =========================
-
-@app.get("/")
-def read_root():
-    return {"message": "DuoFinder API funcionando ✅"}
 
 app.include_router(auth.router,      prefix="/auth",        tags=["auth"])
 app.include_router(user.router,      prefix="/users",       tags=["users"])
