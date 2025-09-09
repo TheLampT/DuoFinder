@@ -1,26 +1,37 @@
-from fastapi import Depends, HTTPException, status
-from app.routers.auth import get_current_user  # ajustá el import según tu estructura
-from sqlalchemy.orm import Session
-from app.db.connection import get_db  # si usás SQLAlchemy
-from app.models.user import User  # tu modelo real de usuarios
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
-from fastapi import APIRouter
+from sqlalchemy.orm import Session
+from datetime import date, datetime
+
+from app.db.connection import get_db
+from app.models.user import User
+from app.models.user_images import UserImages
+from app.models.user_game_skill import UserGamesSkill
+from app.models.games import Games
+from app.routers.auth import get_current_user
 
 router = APIRouter()
+
+def calculate_age(birthdate: date) -> int:
+    today = datetime.today()
+    return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
 
 class UserProfile(BaseModel):
     username: str
     email: str
     bio: str = ""
 
-@router.get("/me", response_model=UserProfile)
+class UserProfileOut(UserProfile):
+    age: int
+
+@router.get("/me", response_model=UserProfileOut)
 def get_my_profile(current_user: User = Depends(get_current_user)):
     return {
         "username": current_user.Username,
         "email": current_user.Mail,
-        "bio": current_user.Bio or ""
+        "bio": current_user.Bio or "",
+        "age": calculate_age(current_user.BirthDate),
     }
-
 
 @router.put("/me")
 def update_profile(
@@ -28,23 +39,79 @@ def update_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    current_user.username = profile.username
-    current_user.email = profile.email
-    current_user.bio = profile.bio
+    # Actualiza solo si se pasó un valor
+    if profile.username is not None:
+        current_user.Username = profile.username
+    if profile.email is not None:
+        current_user.Mail = profile.email
+    if profile.bio is not None:
+        current_user.Bio = profile.bio
+    if profile.server is not None:
+        current_user.Server = profile.server
+    if profile.discord is not None:
+        current_user.Discord = profile.discord
+    if profile.tracker is not None:
+        current_user.Tracker = profile.tracker
+    if profile.birthdate is not None:
+        current_user.BirthDate = profile.birthdate
 
     db.commit()
     db.refresh(current_user)
 
-    return {"message": "Perfil actualizado", "new_profile": profile}
+    return {
+        "message": "Perfil actualizado",
+        "new_profile": {
+            "username": current_user.Username,
+            "email": current_user.Mail,
+            "bio": current_user.Bio,
+            "server": current_user.Server,
+            "discord": current_user.Discord,
+            "tracker": current_user.Tracker,
+            "birthdate": str(current_user.BirthDate),
+        }
+    }
+
 
 @router.delete("/me")
 def delete_my_account(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    db.delete(current_user)
+    current_user.IsActive = False
     db.commit()
     return {"message": "Cuenta eliminada exitosamente"}
 
+@router.get("/{user_id}")
+def get_user_profile(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.ID == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
+    image = db.query(UserImages).filter(
+        UserImages.UserID == user_id
+    ).first()
+    image_url = image.Url if image else None
 
+    skills = db.query(UserGamesSkill, Games).join(Games, UserGamesSkill.GameID == Games.ID).filter(
+        UserGamesSkill.UserID == user_id
+    ).all()
+
+    game_skill = [
+        {
+            "game": game.Name,
+            "skill": skill.SkillLevel,
+            "isRanked": skill.IsRanked
+        }
+        for skill, game in skills
+    ]
+
+    return {
+        "id": str(user.ID),
+        "username": user.Username,
+        "age": calculate_age(user.BirthDate),
+        "bio": user.Bio or "",
+        "image": image_url,
+        "server": user.Server,
+        "discord": user.Discord,
+        "gameSkill": game_skill
+    }
