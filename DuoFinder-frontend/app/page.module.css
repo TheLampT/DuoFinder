@@ -1,0 +1,139 @@
+:root{
+  --bg:#0b0f14;
+  --text:#e8eaf0;
+  --muted:#a7b0c0;
+  --card:#121826;
+  --outline:#2a3445;
+  --red:#e74a4a;     /* corazón del logo */
+  --purple:#2b1f5a;  /* gamepad del logo */
+}
+
+/* layout general */
+.wrapper{
+  min-height:100svh;
+  background: var(--bg);
+  color: var(--text);
+  position:relative;
+  overflow:hidden;
+}
+
+/* NAV */
+.nav{
+  position:relative;
+  z-index:5;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:18px 28px;
+}
+.brand{ display:flex; align-items:center; gap:10px; }
+.logo{ width:28px; height:28px; border-radius:6px; }
+.brandText{ font-weight:900; letter-spacing:.2px; font-size:20px; }
+
+.loginBtn{
+  border:1px solid var(--outline);
+  background:transparent;
+  color:var(--text);
+  padding:10px 14px;
+  border-radius:999px;
+  text-decoration:none;
+}
+.loginBtn:hover{ background:#0b1220; }
+
+/* HERO */
+.hero{
+  position:relative;
+  min-height:calc(100svh - 64px);
+  display:grid;
+  place-items:center;
+}
+
+/* grid de “celulares” al fondo */
+.phones{
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  transform: rotate(-12deg) scale(1.05);
+  display:grid;
+  grid-template-columns: repeat(7, 240px);
+  grid-auto-rows: 420px;
+  gap:28px;
+  justify-content:center;
+  align-content:center;
+  pointer-events:none;
+}
+
+/* cada “celular” */
+.phone{
+  width:240px;
+  height:420px;
+  border-radius:28px;
+  background-size:cover;
+  background-position:center;
+  box-shadow: 0 18px 40px rgba(0,0,0,.45), inset 0 0 0 10px #111;
+  filter: saturate(1.05);
+  opacity:.9;
+}
+
+/* ubicaciones (como mosaico) */
+.p1{ grid-column:1; grid-row:1; }
+.p2{ grid-column:2; grid-row:1; }
+.p3{ grid-column:3; grid-row:1; }
+.p4{ grid-column:4; grid-row:1; }
+.p5{ grid-column:5; grid-row:1; }
+.p6{ grid-column:2; grid-row:2; }
+.p7{ grid-column:3; grid-row:2; }
+.p8{ grid-column:4; grid-row:2; }
+.p9{ grid-column:5; grid-row:2; }
+.p10{ grid-column:6; grid-row:2; }
+
+/* oscurecedor para leer bien el texto */
+.overlay{
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(80% 60% at 50% 60%, rgba(11,15,20,.0) 0%, rgba(11,15,20,.6) 55%, rgba(11,15,20,.85) 100%),
+    linear-gradient(to bottom, rgba(0,0,0,.35) 0%, rgba(0,0,0,.55) 100%);
+  z-index:2;
+}
+
+/* contenido encima */
+.content{
+  position:relative;
+  z-index:3;
+  text-align:center;
+  padding:24px;
+}
+
+.title{
+  margin:0 0 18px;
+  font-weight:900;
+  letter-spacing:.5px;
+  font-size: clamp(36px, 8vw, 90px);
+  line-height: .95;
+  text-shadow: 0 10px 30px rgba(0,0,0,.6);
+}
+
+.cta{
+  display:inline-block;
+  padding:14px 22px;
+  border-radius:999px;
+  background: var(--red);
+  color:#fff;
+  font-weight:900;
+  text-decoration:none;
+  border:1px solid var(--red);
+  box-shadow: 0 10px 24px rgba(231,74,74,.35);
+}
+.cta:hover{ filter:brightness(1.05); }
+
+/* responsive: menos dispositivos y más zoom en mobile */
+@media (max-width: 1024px){
+  .phones{ grid-template-columns: repeat(5, 220px); grid-auto-rows: 380px; gap:22px; }
+  .phone{ width:220px; height:380px; }
+}
+@media (max-width: 720px){
+  .phones{ grid-template-columns: repeat(3, 200px); grid-auto-rows: 340px; gap:18px; }
+  .phone{ width:200px; height:340px; }
+  .overlay{ background: linear-gradient(to bottom, rgba(0,0,0,.6), rgba(0,0,0,.8)); }
+}

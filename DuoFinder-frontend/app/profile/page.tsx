@@ -1,30 +1,68 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './page.module.css';
 
-// Tipo simple de perfil (ajustaremos cuando conectemos a la API real)
+/* ===== Tipos ===== */
+type GameSkill = { gameId: string; gameName: string; rank: string };
+
 type UserProfile = {
   id: string;
   username: string;
   email: string;
   birthdate: string; // YYYY-MM-DD
   bio?: string;
-  games?: string;     // csv: "Valorant, LoL"
-  interests?: string; // csv: "Ranked, Casual"
-  discord?: string;   // ej: usuario#1234
+  avatarUrl?: string;         // <--- NUEVO: dataURL de la foto de perfil
+  seeking?: string[];         // <--- NUEVO: ["Casual","Competitivo"]
+  games?: string;             // compat string
+  gameSkills?: GameSkill[];
+  interests?: string;
+  discord?: string;
 };
 
-// Clave para guardar/cargar mock
+/* ===== Mock catálogo de juegos + rangos ===== */
+const GAME_OPTIONS: Array<{ id: string; name: string; ranks: string[] }> = [
+  {
+    id: 'valorant',
+    name: 'Valorant',
+    ranks: [
+      'Hierro', 'Bronce', 'Plata', 'Oro', 'Platino',
+      'Diamante', 'Ascendente', 'Inmortal', 'Radiante',
+    ],
+  },
+  {
+    id: 'lol',
+    name: 'League of Legends',
+    ranks: [
+      'Hierro', 'Bronce', 'Plata', 'Oro', 'Platino',
+      'Diamante', 'Maestro', 'Gran Maestro', 'Retador',
+    ],
+  },
+  { id: 'cs2', name: 'CS2', ranks: ['Silver', 'Gold Nova', 'Master Guardian', 'Legendary Eagle', 'Supreme', 'Global Elite'] },
+  { id: 'apex', name: 'Apex Legends', ranks: ['Bronce', 'Plata', 'Oro', 'Platino', 'Diamante', 'Maestro', 'Depredador'] },
+  { id: 'fortnite', name: 'Fortnite', ranks: ['Bronce', 'Plata', 'Oro', 'Platino', 'Diamante', 'Élite', 'Campeón', 'Unreal'] },
+];
+
+/* ===== Otras opciones ===== */
+const SEEKING_OPTIONS = ['Casual', 'Competitivo'] as const;
+
+/* ===== Storage ===== */
 const LS_USER_KEY = 'df_user';
 
+/* ===== Default ===== */
 const DEFAULT_USER: UserProfile = {
   id: 'mock-1',
   username: 'PlayerOne',
   email: 'player@duofinder.gg',
   birthdate: '2000-01-01',
   bio: 'Busco dúo para ranked a la noche.',
+  avatarUrl: '',               // nada por defecto
+  seeking: ['Casual'],         // por defecto casual
   games: 'Valorant, League of Legends',
+  gameSkills: [
+    { gameId: 'valorant', gameName: 'Valorant', rank: 'Oro' },
+    { gameId: 'lol', gameName: 'League of Legends', rank: 'Oro' },
+  ],
   interests: 'Ranked, Casual',
   discord: 'playerone#1234',
 };
@@ -36,23 +74,83 @@ export default function ProfilePage() {
   const [ok, setOk] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Cargar perfil simulado desde localStorage (si existe)
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  /* Cargar perfil mock */
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LS_USER_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as UserProfile;
-        setProfile({ ...DEFAULT_USER, ...parsed });
+        setProfile({
+          ...DEFAULT_USER,
+          ...parsed,
+          gameSkills: parsed.gameSkills ?? DEFAULT_USER.gameSkills,
+          seeking: parsed.seeking ?? DEFAULT_USER.seeking,
+        });
       }
-    } catch {
-      // si hay algo corrupto, seguimos con DEFAULT_USER
-    } finally {
-      setLoading(false);
-    }
+    } catch {}
+    setLoading(false);
   }, []);
 
   function onChange<K extends keyof UserProfile>(key: K, val: UserProfile[K]) {
     setProfile((p) => ({ ...p, [key]: val }));
+  }
+
+  /* Avatar: abrir input */
+  function pickAvatar() {
+    fileInputRef.current?.click();
+  }
+
+  /* Avatar: cambiar */
+  function onAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      onChange('avatarUrl', reader.result as string); // guardo dataURL
+    };
+    reader.readAsDataURL(file);
+    // limpiamos value para permitir re-subir el mismo archivo si quiere
+    e.currentTarget.value = '';
+  }
+
+  /* Avatar: quitar */
+  function removeAvatar() {
+    onChange('avatarUrl', '');
+  }
+
+  /* Toggle juego */
+  function toggleGame(gameId: string) {
+    const meta = GAME_OPTIONS.find((g) => g.id === gameId)!;
+    setProfile((p) => {
+      const exists = (p.gameSkills ?? []).some((g) => g.gameId === gameId);
+      const nextSkills = exists
+        ? (p.gameSkills ?? []).filter((g) => g.gameId !== gameId)
+        : [...(p.gameSkills ?? []), { gameId: meta.id, gameName: meta.name, rank: meta.ranks[0] }];
+      return {
+        ...p,
+        gameSkills: nextSkills,
+        games: nextSkills.map((g) => g.gameName).join(', '),
+      };
+    });
+  }
+
+  /* Cambiar rango */
+  function setRank(gameId: string, rank: string) {
+    setProfile((p) => ({
+      ...p,
+      gameSkills: (p.gameSkills ?? []).map((g) => (g.gameId === gameId ? { ...g, rank } : g)),
+    }));
+  }
+
+  /* Toggle buscando (multi-selección) */
+  function toggleSeeking(option: typeof SEEKING_OPTIONS[number]) {
+    setProfile((p) => {
+      const set = new Set(p.seeking ?? []);
+      set.has(option) ? set.delete(option) : set.add(option);
+      return { ...p, seeking: Array.from(set) };
+    });
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -60,14 +158,12 @@ export default function ProfilePage() {
     setOk(null);
     setError(null);
 
-    // Validaciones mínimas
     if (!profile.username.trim()) return setError('Ingresá un nombre de usuario.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) return setError('Email inválido.');
     if (!profile.birthdate) return setError('Ingresá tu fecha de nacimiento.');
 
     try {
       setSaving(true);
-      // 🔌 Simulación de "PUT /users/me"
       await new Promise((r) => setTimeout(r, 700));
       localStorage.setItem(LS_USER_KEY, JSON.stringify(profile));
       setOk('Cambios guardados (simulado).');
@@ -100,6 +196,9 @@ export default function ProfilePage() {
     );
   }
 
+  const selectedGameIds = new Set((profile.gameSkills ?? []).map((g) => g.gameId));
+  const selectedSeeking = new Set(profile.seeking ?? []);
+
   return (
     <div className={styles.page}>
       <div className={styles.card}>
@@ -112,97 +211,164 @@ export default function ProfilePage() {
         {ok && <div className={styles.alertOk}>{ok}</div>}
 
         <form className={styles.form} onSubmit={onSubmit}>
-          {/* Fila 1: Nombre + Email */}
-          <div className={styles.row2}>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="username">Nombre</label>
-              <input
-                id="username"
-                className={styles.input}
-                type="text"
-                placeholder="Tu nick"
-                value={profile.username}
-                onChange={(e) => onChange('username', e.target.value)}
-                maxLength={32}
-              />
-            </div>
-
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="email">Email</label>
-              <input
-                id="email"
-                className={styles.input}
-                type="email"
-                value={profile.email}
-                onChange={(e) => onChange('email', e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Fila 2: Fecha de nacimiento + Discord */}
-          <div className={styles.row2}>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="birthdate">Fecha de nacimiento</label>
-              <input
-                id="birthdate"
-                className={styles.input}
-                type="date"
-                value={profile.birthdate}
-                onChange={(e) => onChange('birthdate', e.target.value)}
-              />
-            </div>
-
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="discord">Discord</label>
-              <input
-                id="discord"
-                className={styles.input}
-                type="text"
-                placeholder="usuario#1234"
-                value={profile.discord ?? ''}
-                onChange={(e) => onChange('discord', e.target.value)}
-              />
+          {/* AVATAR */}
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Avatar</h3>
+            <div className={styles.avatarWrap}>
+              <div className={styles.avatar}>
+                {profile.avatarUrl ? (
+                  <img src={profile.avatarUrl} alt="Avatar" />
+                ) : (
+                  <div className={styles.avatarInitial}>
+                    {(profile.username || 'U').substring(0, 1).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className={styles.avatarActions}>
+                  <button type="button" className={styles.avatarBtn} onClick={pickAvatar}>Cambiar</button>
+                  <button type="button" className={styles.avatarBtn} onClick={removeAvatar}>Quitar</button>
+                </div>
+                <div className={styles.hint}>Recomendado: 512×512 px (JPG o PNG).</div>
+                <input
+                  ref={fileInputRef}
+                  className={styles.fileInput}
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  onChange={onAvatarFile}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Bio (única) */}
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="bio">Bio</label>
-            <textarea
-              id="bio"
-              className={styles.textarea}
-              rows={4}
-              maxLength={3000}
-              placeholder="Contá brevemente qué buscás…"
-              value={profile.bio ?? ''}
-              onChange={(e) => onChange('bio', e.target.value)}
-            />
+          {/* Datos básicos */}
+          <div className={styles.section}>
+            <div className={styles.row2}>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="username">Nombre</label>
+                <input
+                  id="username"
+                  className={styles.input}
+                  type="text"
+                  placeholder="Tu nick"
+                  value={profile.username}
+                  onChange={(e) => onChange('username', e.target.value)}
+                  maxLength={32}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  className={styles.input}
+                  type="email"
+                  value={profile.email}
+                  onChange={(e) => onChange('email', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className={styles.row2}>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="birthdate">Fecha de nacimiento</label>
+                <input
+                  id="birthdate"
+                  className={styles.input}
+                  type="date"
+                  value={profile.birthdate}
+                  onChange={(e) => onChange('birthdate', e.target.value)}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="discord">Discord</label>
+                <input
+                  id="discord"
+                  className={styles.input}
+                  type="text"
+                  placeholder="usuario#1234"
+                  value={profile.discord ?? ''}
+                  onChange={(e) => onChange('discord', e.target.value)}
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Juegos */}
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="games">Juegos (separados por coma)</label>
-            <input
-              id="games"
-              className={styles.input}
-              type="text"
-              placeholder="Valorant, League of Legends"
-              value={profile.games ?? ''}
-              onChange={(e) => onChange('games', e.target.value)}
-            />
+          {/* Bio */}
+          <div className={styles.section}>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="bio">Bio</label>
+              <textarea
+                id="bio"
+                className={styles.textarea}
+                rows={4}
+                maxLength={3000}
+                placeholder="Contá brevemente qué buscás…"
+                value={profile.bio ?? ''}
+                onChange={(e) => onChange('bio', e.target.value)}
+              />
+              <div className={styles.counter}>{(profile.bio ?? '').length}/3000</div>
+            </div>
           </div>
 
-          {/* Intereses */}
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="interests">Intereses (separados por coma)</label>
-            <input
-              id="interests"
-              className={styles.input}
-              type="text"
-              placeholder="Ranked, Casual"
-              value={profile.interests ?? ''}
-              onChange={(e) => onChange('interests', e.target.value)}
-            />
+          {/* Buscando (chips) */}
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Buscando</h3>
+            <div className={styles.chips}>
+              {SEEKING_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  className={`${styles.chip} ${selectedSeeking.has(opt) ? styles.chipSelected : ''}`}
+                  onClick={() => toggleSeeking(opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Juegos + rango */}
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Juegos & rangos</h3>
+            <div className={styles.chips}>
+              {GAME_OPTIONS.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  className={`${styles.chip} ${selectedGameIds.has(g.id) ? styles.chipSelected : ''}`}
+                  onClick={() => toggleGame(g.id)}
+                >
+                  {g.name}
+                </button>
+              ))}
+            </div>
+
+            {(profile.gameSkills?.length ?? 0) > 0 && (
+              <div className={styles.ranks}>
+                {(profile.gameSkills ?? []).map((s) => {
+                  const ranks = GAME_OPTIONS.find((g) => g.id === s.gameId)?.ranks ?? [];
+                  return (
+                    <div key={s.gameId} className={styles.rankRow}>
+                      <span className={styles.rankLabel}>{s.gameName}</span>
+                      <select
+                        className={styles.rankSelect}
+                        value={s.rank}
+                        onChange={(e) => setRank(s.gameId, e.target.value)}
+                      >
+                        {ranks.map((r) => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </select>
+                      <button type="button" className={styles.remove} onClick={() => toggleGame(s.gameId)}>
+                        Quitar
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Acciones */}
@@ -210,18 +376,10 @@ export default function ProfilePage() {
             <button className={styles.btn} type="submit" disabled={saving}>
               {saving ? 'Guardando…' : 'Guardar cambios'}
             </button>
-            <button
-              className={`${styles.btn} ${styles.btnOutline}`}
-              type="button"
-              onClick={onReset}
-            >
+            <button className={`${styles.btn} ${styles.btnOutline}`} type="button" onClick={onReset}>
               Deshacer cambios
             </button>
-            <button
-              className={`${styles.btn} ${styles.btnOutline}`}
-              type="button"
-              onClick={onLogout}
-            >
+            <button className={`${styles.btn} ${styles.btnOutline}`} type="button" onClick={onLogout}>
               Cerrar sesión (mock)
             </button>
           </div>

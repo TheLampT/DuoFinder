@@ -1,90 +1,136 @@
-/* Módulo solo para /login. Colores neutros; después los cambiamos a la paleta del logo. */
-
 :root{
+  /* Paleta DuoFinder (del logo) */
   --bg:#0b0f14;
-  --card:#121826;
   --text:#e8eaf0;
   --muted:#a7b0c0;
   --outline:#2a3445;
-  --primary:#e74a4a;  /* rojo logo (luego ajustamos exacto) */
-  --accent:#2b1f5a;   /* violeta logo (luego ajustamos exacto) */
+  --red:#e74a4a;     /* primario */
+  --purple:#2b1f5a;  /* foco */
 }
 
-.page{
-  min-height:100svh;     /* 100vh en mobile puede dar saltos; svh es mejor */
+/* lienzo */
+.shell{
+  min-height:100svh;
   display:grid;
   place-items:center;
-  padding:16px;
-  background: transparent;   /* <- IMPORTANTE: nada de fondo acá */
-  color: inherit;
-}
-
-.card{
-  width:100%;
-  max-width:440px;
-  background:var(--card);
-  border:1px solid var(--outline);
-  border-radius:18px;
+  background:var(--bg);
   padding:24px;
-  box-shadow:0 12px 32px rgba(0,0,0,.35);
 }
 
-.header{ text-align:center; margin-bottom:14px; }
-.title{ margin:0 0 6px; font-weight:800; letter-spacing:.2px; }
-.sub{ margin:0; color:var(--muted); font-size:14px; }
+/* tarjeta de 2 paneles */
+.card{
+  width:min(980px, 100%);
+  background:#fff;
+  border-radius:22px;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns: 1.05fr .95fr;
+  box-shadow:0 22px 60px rgba(0,0,0,.45);
+  border:1px solid rgba(255,255,255,.04);
+}
+
+/* IZQUIERDA (form) */
+.left{
+  background:#ffffff;
+  color:#111827;
+  padding:32px 28px 28px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.logoRow{
+  display:flex; align-items:center; gap:10px;
+  font-weight:900; letter-spacing:.2px;
+}
+.logoRow img{ width:26px; height:26px; border-radius:6px; }
+
+.welcome{ margin:6px 0 4px; font-size:22px; font-weight:900; }
+.sub{ margin:0 0 10px; color:#6b7280; font-size:13px; }
 
 .form{ display:flex; flex-direction:column; gap:12px; }
-.label{ font-size:13px; color:var(--muted); }
+.label{ font-size:13px; color:#6b7280; }
 .input{
   width:100%;
   padding:12px 14px;
-  border-radius:12px;
-  border:1px solid var(--outline);
-  background:#0b1220;
-  color:var(--text);
+  border-radius:999px;
+  border:1px solid #e5e7eb;
+  background:#f7f9fc;
+  color:#111827;
   outline:none;
-  transition:border-color .15s, box-shadow .15s;
+  transition:border-color .15s, box-shadow .15s, background .15s;
 }
 .input:focus{
-  border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(43,31,90,.25);
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(43,31,90,.18);
+  background:#fff;
 }
 
 .btn{
-  margin-top:4px;
-  padding:12px 16px;
-  border-radius:12px;
-  border:1px solid var(--primary);
-  background:var(--primary);
+  margin-top:6px;
+  padding:12px 18px;
+  border-radius:999px;
+  border:1px solid var(--red);
+  background: linear-gradient(90deg, #ff7a7a, var(--red));
   color:#fff;
-  font-weight:800;
+  font-weight:900;
+  letter-spacing:.3px;
   cursor:pointer;
-  transition:filter .15s, transform .02s;
+  transition: filter .15s, transform .02s;
 }
 .btn:hover{ filter:brightness(1.05); }
 .btn:active{ transform:translateY(1px); }
 .btn:disabled{ opacity:.6; cursor:not-allowed; }
 
-.alertError{
-  background:rgba(231,74,74,.12);
-  color:#ffd0d0;
-  border:1px solid rgba(231,74,74,.5);
+.alert{
+  background:rgba(231,74,74,.08);
+  color:#7f1d1d;
+  border:1px solid rgba(231,74,74,.35);
   border-radius:10px;
   padding:10px 12px;
-  font-size:14px;
-  margin-bottom:10px;
-}
-.alertOk{
-  background:#0e2b1d;
-  color:#8ef1c3;
-  border:1px solid #14532d;
-  border-radius:10px;
-  padding:10px 12px;
-  font-size:14px;
-  margin-bottom:10px;
+  font-size:13px;
 }
 
-.footer{ margin-top:12px; text-align:center; }
-.muted{ color:var(--muted); font-size:14px; }
-.link{ color:var(--primary); text-decoration:none; }
+.small{ color:#6b7280; font-size:13px; margin-top:8px; }
+.link{ color:var(--red); text-decoration:none; }
 .link:hover{ text-decoration:underline; }
+
+/* DERECHA (imagen + overlay rojo) */
+.right{
+  position:relative;
+  background-size:cover;
+  background-position:center;
+  min-height:420px;
+  isolation:isolate;
+}
+.right::before{
+  content:"";
+  position:absolute; inset:0;
+  background: linear-gradient(0deg, rgba(231,74,74,.75), rgba(231,74,74,.75));
+  mix-blend-mode:multiply;
+  z-index:0;
+}
+.right::after{
+  content:"";
+  position:absolute; inset:0;
+  background: linear-gradient(to bottom right, rgba(231,74,74,.65), rgba(11,15,20,.55));
+  z-index:0;
+}
+
+.brandMark{
+  position:absolute; inset:auto 0 0 0;
+  display:grid; place-items:center; gap:8px;
+  padding:28px 18px 34px;
+  color:#fff; text-align:center;
+  z-index:1;
+}
+.brandMark img{ width:34px; height:34px; border-radius:8px; }
+.brandMark strong{ font-size:22px; letter-spacing:.4px; }
+.brandMark p{ margin:0; font-size:13px; opacity:.9; }
+
+/* RESPONSIVE: stack en mobile */
+@media (max-width: 860px){
+  .card{ grid-template-columns:1fr; }
+  .right{ order:-1; min-height:280px; }
+  .left{ padding:26px 20px; }
+}
