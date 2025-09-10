@@ -39,11 +39,13 @@
   gap:14px;
 }
 
+/* ── DuoFinder (arriba a la izquierda) ── */
 .logoRow{
-  display:flex; align-items:center; gap:10px;
-  font-weight:900; letter-spacing:.2px;
+  display:flex; align-items:center; gap:12px;
+  font-weight:900; letter-spacing:.3px;
 }
-.logoRow img{ width:26px; height:26px; border-radius:6px; }
+.logoRow img{ width:40px; height:40px; border-radius:10px; }
+.logoRow span{ font-size:20px; font-weight:900; }
 
 .welcome{ margin:6px 0 4px; font-size:22px; font-weight:900; }
 .sub{ margin:0 0 10px; color:#6b7280; font-size:13px; }
@@ -110,23 +112,54 @@
   mix-blend-mode:multiply;
   z-index:0;
 }
+/* overlay más marcado para que la marca se lea mejor */
 .right::after{
   content:"";
   position:absolute; inset:0;
-  background: linear-gradient(to bottom right, rgba(231,74,74,.65), rgba(11,15,20,.55));
+  background: linear-gradient(to bottom right, rgba(231,74,74,.7), rgba(11,15,20,.6));
   z-index:0;
 }
 
+/* ── Marca centrada y compacta en el panel derecho ── */
 .brandMark{
-  position:absolute; inset:auto 0 0 0;
-  display:grid; place-items:center; gap:8px;
-  padding:28px 18px 34px;
-  color:#fff; text-align:center;
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%); /* centro exacto */
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;                 /* más juntitos */
+  padding:0 16px;          /* respiración lateral */
+  text-align:center;
+  color:#fff;
   z-index:1;
 }
-.brandMark img{ width:34px; height:34px; border-radius:8px; }
-.brandMark strong{ font-size:22px; letter-spacing:.4px; }
-.brandMark p{ margin:0; font-size:13px; opacity:.9; }
+
+.brandMark img{
+  width:56px;
+  height:56px;
+  border-radius:12px;
+  margin:0;
+}
+
+.brandMark strong{
+  font-size:34px;
+  line-height:1;           /* sin aire extra */
+  letter-spacing:.6px;
+  margin:0;
+  text-shadow:0 8px 24px rgba(0,0,0,.45);
+}
+
+.brandMark p{
+  margin:0;
+  font-size:14px;
+  line-height:1.2;         /* pegadito al título */
+  opacity:.95;
+  text-shadow:0 6px 20px rgba(0,0,0,.4);
+}
+
+
 
 /* RESPONSIVE: stack en mobile */
 @media (max-width: 860px){

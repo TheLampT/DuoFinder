@@ -1,11 +1,10 @@
 :root{
-  /* Paleta DuoFinder (del logo) */
   --bg:#0b0f14;
   --text:#e8eaf0;
   --muted:#a7b0c0;
   --outline:#2a3445;
-  --red:#e74a4a;     /* primario */
-  --purple:#2b1f5a;  /* foco */
+  --red:#e74a4a;
+  --purple:#2b1f5a;
 }
 
 /* lienzo */
@@ -17,7 +16,7 @@
   padding:24px;
 }
 
-/* tarjeta de 2 paneles */
+/* tarjeta 2 paneles */
 .card{
   width:min(980px, 100%);
   background:#fff;
@@ -39,11 +38,13 @@
   gap:14px;
 }
 
+/* DuoFinder arriba a la izquierda (más grande) */
 .logoRow{
-  display:flex; align-items:center; gap:10px;
-  font-weight:900; letter-spacing:.2px;
+  display:flex; align-items:center; gap:12px;
+  font-weight:900; letter-spacing:.3px;
 }
-.logoRow img{ width:26px; height:26px; border-radius:6px; }
+.logoRow img{ width:40px; height:40px; border-radius:10px; }
+.logoRow span{ font-size:20px; font-weight:900; }
 
 .welcome{ margin:6px 0 4px; font-size:22px; font-weight:900; }
 .sub{ margin:0 0 10px; color:#6b7280; font-size:13px; }
@@ -82,20 +83,11 @@
 .btn:active{ transform:translateY(1px); }
 .btn:disabled{ opacity:.6; cursor:not-allowed; }
 
-.alert{
-  background:rgba(231,74,74,.08);
-  color:#7f1d1d;
-  border:1px solid rgba(231,74,74,.35);
-  border-radius:10px;
-  padding:10px 12px;
-  font-size:13px;
-}
-
 .small{ color:#6b7280; font-size:13px; margin-top:8px; }
 .link{ color:var(--red); text-decoration:none; }
 .link:hover{ text-decoration:underline; }
 
-/* DERECHA (imagen + overlay rojo) */
+/* DERECHA (imagen + overlays) */
 .right{
   position:relative;
   background-size:cover;
@@ -113,22 +105,41 @@
 .right::after{
   content:"";
   position:absolute; inset:0;
-  background: linear-gradient(to bottom right, rgba(231,74,74,.65), rgba(11,15,20,.55));
+  background: linear-gradient(to bottom right, rgba(231,74,74,.7), rgba(11,15,20,.6));
   z-index:0;
 }
 
+/* Marca centrada en el medio (logo + DuoFinder + tagline) */
 .brandMark{
-  position:absolute; inset:auto 0 0 0;
-  display:grid; place-items:center; gap:8px;
-  padding:28px 18px 34px;
-  color:#fff; text-align:center;
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  padding:0 16px;
+  text-align:center;
+  color:#fff;
   z-index:1;
 }
-.brandMark img{ width:34px; height:34px; border-radius:8px; }
-.brandMark strong{ font-size:22px; letter-spacing:.4px; }
-.brandMark p{ margin:0; font-size:13px; opacity:.9; }
+.brandMark img{ width:56px; height:56px; border-radius:12px; }
+.brandMark strong{
+  font-size:34px;
+  line-height:1;
+  letter-spacing:.6px;
+  text-shadow:0 8px 24px rgba(0,0,0,.45);
+}
+.brandMark p{
+  margin:0;
+  font-size:14px;
+  line-height:1.2;
+  opacity:.95;
+  text-shadow:0 6px 20px rgba(0,0,0,.4);
+}
 
-/* RESPONSIVE: stack en mobile */
+/* Responsive */
 @media (max-width: 860px){
   .card{ grid-template-columns:1fr; }
   .right{ order:-1; min-height:280px; }
