@@ -1,9 +1,11 @@
 /* app/messages/messages.module.css */
 .messagesContainer {
   display: flex;
-  height: 100vh;
+  height: calc(100vh - var(--bottom-bar-height, 60px)); /* Account for bottom bar */
   background-color: #f8fafc;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  position: relative;
+  overflow: hidden;
 }
 
 /* Matches sidebar styles */
@@ -50,6 +52,7 @@
 .matchesList {
   flex: 1;
   overflow-y: auto;
+  padding-bottom: 10px; /* Add padding to prevent overlap with bottom bar */
 }
 
 .matchItem {
@@ -166,6 +169,7 @@
   padding: 15px 20px;
   background-color: white;
   border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
 }
 
 .backButton {
@@ -238,6 +242,7 @@
   padding: 20px;
   overflow-y: auto;
   background-color: white;
+  padding-bottom: 30px; /* Extra padding for bottom bar */
 }
 
 .profileHeader {
@@ -340,6 +345,7 @@
   background-color: #f8fafc;
   display: flex;
   flex-direction: column;
+  padding-bottom: 30px; /* Extra padding for bottom bar */
 }
 
 .message {
@@ -396,6 +402,7 @@
   background-color: white;
   border-top: 1px solid #e2e8f0;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .messageInput {
@@ -452,6 +459,7 @@
   background-color: white;
   text-align: center;
   padding: 20px;
+  padding-bottom: 80px; /* Extra padding for bottom bar */
 }
 
 .noChatIcon {
@@ -494,7 +502,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  height: calc(100vh - var(--bottom-bar-height, 60px)); /* Account for bottom bar */
 }
 
 .loadingSpinner {
@@ -513,6 +521,11 @@
 
 /* Mobile responsive styles */
 @media (max-width: 768px) {
+  .messagesContainer {
+    height: calc(100vh - var(--bottom-bar-height, 60px) - env(safe-area-inset-bottom)); /* Account for safe area on mobile */
+    overflow: hidden;
+  }
+  
   .matchesSidebar {
     position: absolute;
     top: 0;
@@ -543,6 +556,7 @@
   
   .sidebarHeader {
     padding: 15px;
+    padding-top: calc(15px + env(safe-area-inset-top, 0px)); /* Account for notch */
   }
   
   .matchItem {
@@ -551,22 +565,33 @@
   
   .chatHeader {
     padding: 12px 15px;
+    padding-top: calc(12px + env(safe-area-inset-top, 0px)); /* Account for notch */
   }
   
   .profileView {
     padding: 15px;
+    padding-bottom: 30px; /* Extra padding for bottom bar */
+    padding-top: calc(15px + env(safe-area-inset-top, 0px)); /* Account for notch */
   }
   
   .chatMessages {
     padding: 15px;
+    padding-bottom: 30px; /* Extra padding for bottom bar */
+    padding-top: calc(15px + env(safe-area-inset-top, 0px)); /* Account for notch */
   }
   
   .messageInputContainer {
     padding: 12px 15px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); /* Account for home indicator */
   }
   
   .messageContent {
     max-width: 85%;
+  }
+  
+  .noChatSelected {
+    padding-bottom: 100px; /* Extra padding for bottom bar on mobile */
+    padding-top: calc(20px + env(safe-area-inset-top, 0px)); /* Account for notch */
   }
 }
 
@@ -606,5 +631,15 @@
   .gameTag {
     font-size: 12px;
     padding: 4px 10px;
+  }
+  
+  /* Fix for mobile viewport height issues */
+  .messagesContainer {
+    height: calc(100svh - var(--bottom-bar-height, 60px)) !important;
+  }
+  
+  .matchesSidebar,
+  .chatContainer {
+    height: calc(100svh - var(--bottom-bar-height, 60px)) !important;
   }
 }
