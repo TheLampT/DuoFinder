@@ -9,6 +9,9 @@ from app.models.user_images import UserImages
 from app.models.user_game_skill import UserGamesSkill
 from app.models.games import Games
 from app.routers.auth import get_current_user
+import os
+
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 router = APIRouter()
 
