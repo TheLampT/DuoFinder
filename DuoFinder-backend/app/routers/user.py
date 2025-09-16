@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from datetime import date, datetime
+from typing import Optional
+from app.utils.security import hash_password
 
 from app.db.connection import get_db
 from app.models.user import User
@@ -20,9 +22,13 @@ def calculate_age(birthdate: date) -> int:
     return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
 
 class UserProfile(BaseModel):
-    username: str
-    email: str
-    bio: str = ""
+    username: Optional[str] = None
+    password: Optional[str] = None
+    bio: Optional[str] = ""
+    server: Optional[str] = None
+    discord: Optional[str] = None
+    tracker: Optional[str] = None
+    birthdate: Optional[date] = None
 
 class UserProfileOut(UserProfile):
     age: int
@@ -42,11 +48,13 @@ def update_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    
     # Actualiza solo si se pasó un valor
     if profile.username is not None:
         current_user.Username = profile.username
-    if profile.email is not None:
-        current_user.Mail = profile.email
+    if profile.password is not None:
+        UpdatedPassword=hash_password(profile.password)
+        current_user.Password = UpdatedPassword
     if profile.bio is not None:
         current_user.Bio = profile.bio
     if profile.server is not None:
@@ -57,6 +65,8 @@ def update_profile(
         current_user.Tracker = profile.tracker
     if profile.birthdate is not None:
         current_user.BirthDate = profile.birthdate
+
+    
 
     db.commit()
     db.refresh(current_user)
