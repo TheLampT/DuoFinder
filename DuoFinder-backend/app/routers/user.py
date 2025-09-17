@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from datetime import date, datetime
-from typing import Optional
+from typing import List, Optional
 from app.utils.security import hash_password
 
 from app.db.connection import get_db
@@ -21,6 +21,12 @@ def calculate_age(birthdate: date) -> int:
     today = datetime.today()
     return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
 
+class GameSkillUpdate(BaseModel):
+    game_id: Optional[int] = None
+    skill_level: Optional[str] = None
+    is_ranked: Optional[bool] = None
+    game_rank_local_id: Optional[int] = None
+
 class UserProfile(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
@@ -29,9 +35,12 @@ class UserProfile(BaseModel):
     discord: Optional[str] = None
     tracker: Optional[str] = None
     birthdate: Optional[date] = None
+    games: Optional[List[GameSkillUpdate]] = None
 
 class UserProfileOut(UserProfile):
     age: int
+
+
 
 @router.get("/me", response_model=UserProfileOut)
 def get_my_profile(current_user: User = Depends(get_current_user)):
@@ -65,6 +74,21 @@ def update_profile(
         current_user.Tracker = profile.tracker
     if profile.birthdate is not None:
         current_user.BirthDate = profile.birthdate
+
+    if profile.games is not None:
+        # Primero eliminamos los juegos anteriores del usuario
+        db.query(UserGamesSkill).filter(UserGamesSkill.UserID == current_user.ID).delete()
+
+        # Luego insertamos los nuevos juegos
+        for game in profile.games:
+            user_game_skill = UserGamesSkill(
+                UserID=current_user.ID,
+                GameId=game.game_id,
+                SkillLevel=game.skill_level,
+                IsRanked=game.is_ranked,
+                Game_rank_local_id=game.game_rank_local_id
+            )
+            db.add(user_game_skill)
 
     
 
