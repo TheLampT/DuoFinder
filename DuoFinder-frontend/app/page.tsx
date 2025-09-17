@@ -1,7 +1,10 @@
-import Link from "next/link";
-import styles from "./page.module.css";
+"use client";
 
-const PHONES = [
+import Link from "next/link";
+import styles from "../styles/pages/page.module.css";
+import { useState, useEffect } from "react";
+
+const PHONES: string[] = [
   "https://picsum.photos/id/1062/400/800",
   "https://picsum.photos/id/1011/400/800",
   "https://picsum.photos/id/1005/400/800",
@@ -15,6 +18,31 @@ const PHONES = [
 ];
 
 export default function Landing() {
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+
+  useEffect(() => {
+    // Check for saved theme preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      setIsDarkMode(savedTheme === 'dark');
+    } else {
+      // Check for system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDarkMode(prefersDark);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Apply the theme to the document
+    const theme = isDarkMode ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [isDarkMode]);
+
+  const toggleTheme = (): void => {
+    setIsDarkMode(!isDarkMode);
+  };
+
   return (
     <main className={styles.wrapper}>
       {/* NAVBAR simple */}
@@ -23,12 +51,19 @@ export default function Landing() {
           <img src="/favicon.ico" alt="DuoFinder" className={styles.logo} />
           <span className={styles.brandText}>DuoFinder</span>
         </div>
-        <Link href="/login" className={styles.loginBtn}>Iniciar sesión</Link>
+        
+        <div className={styles.navButtons}>
+          {/* Theme toggle button */}
+          <button className={styles.themeToggle} onClick={toggleTheme}>
+            {isDarkMode ? '☀️' : '🌙'}
+          </button>
+          <Link href="/preferences" className={styles.settingsBtn}>⚙️</Link>
+        </div>
       </nav>
 
       {/* HERO */}
       <section className={styles.hero}>
-        {/* fondo de “celulares” */}
+        {/* fondo de "celulares" */}
         <div className={styles.phones}>
           {PHONES.map((src, i) => (
             <div
@@ -45,7 +80,11 @@ export default function Landing() {
         {/* contenido principal */}
         <div className={styles.content}>
           <h1 className={styles.title}>Deslizá a la derecha</h1>
-          <Link href="/register" className={styles.cta}>Crear cuenta</Link>
+          
+          <div className={styles.buttonGroup}>
+            <Link href="/login" className={styles.loginBtn}>Iniciar sesión</Link>
+            <Link href="/register" className={styles.cta}>Crear cuenta</Link>
+          </div>
         </div>
       </section>
     </main>

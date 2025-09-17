@@ -1,25 +1,118 @@
+/* Theme variables */
+:root[data-theme="dark"] {
+  --bg: #0b0f14;
+  --text: #e8eaf0;
+  --muted: #a7b0c0;
+  --card: #121826;
+  --outline: #2a3445;
+  --red: #e74a4a;
+  --purple: #2b1f5a;
+  --accent: #e74a4a;
+  --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+:root[data-theme="light"] {
+  --bg: #f0f2f5;
+  --text: #1a1d21;
+  --muted: #6b7280;
+  --card: #ffffff;
+  --outline: #e5e7eb;
+  --red: #e74a4a;
+  --purple: #2b1f5a;
+  --accent: #e74a4a;
+  --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Reset default margins and padding */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
 .discoverContainer {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 400px;
   height: 100vh;
-  padding: 20px;
-  background-color: white;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  margin: 0 auto;
+  background-color: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow: hidden;
 }
 
 .header {
-  text-align: center;
-  padding: 15px 0;
-  border-bottom: 1px solid #eee;
-  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--outline);
+  background-color: var(--bg);
+  z-index: 10;
+  position: relative;
 }
 
-.header h1 {
-  font-size: 1.8rem;
-  color: #ff6b6b;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+.brandText {
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  font-size: 20px;
+}
+
+.navButtons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.themeToggle {
+  background: transparent;
+  border: 1px solid var(--outline);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.themeToggle:hover {
+  background: var(--card);
+}
+
+.settingsBtn {
+  border: 1px solid var(--outline);
+  background: transparent;
+  color: var(--text);
+  padding: 10px;
+  border-radius: 999px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  transition: all 0.2s ease;
+}
+
+.settingsBtn:hover {
+  background: var(--card);
 }
 
 .cardsContainer {
@@ -29,37 +122,38 @@
   justify-content: center;
   align-items: center;
   width: 100%;
-  max-width: 400px;
-  margin: 0 auto;
+  margin: 0;
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: var(--bg);
 }
 
 .currentCardWrapper {
   position: absolute;
   width: 100%;
-  height: 100%;
+  max-width: 400px;
+  height: calc(100% - 40px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 2;
-  /* Current card should be fully opaque */
   opacity: 1;
   transition: opacity 0.3s ease;
 }
 
 .currentCardWrapper.animating {
-  /* Keep current card fully opaque during animation */
   opacity: 1;
 }
 
 .nextCardWrapper {
   position: absolute;
   width: 100%;
-  height: 100%;
+  max-width: 400px;
+  height: calc(100% - 40px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1;
-  /* Next card is slightly smaller and transparent */
   transform: scale(0.95);
   opacity: 0.7;
   pointer-events: none;
@@ -67,7 +161,6 @@
 }
 
 .nextCardWrapper.animating {
-  /* Next card becomes slightly larger and less transparent during animation */
   transform: scale(1.0);
   opacity: 1.0;
 }
@@ -75,14 +168,14 @@
 .noMoreProfiles {
   text-align: center;
   padding: 40px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--gradient);
   border-radius: 20px;
   color: white;
   z-index: 3;
-  /* Initially hidden */
   opacity: 0;
-  /* Apply the fade-in animation */
   animation: fadeIn 0.8s ease forwards;
+  max-width: 400px;
+  width: 100%;
 }
 
 .noMoreProfiles h2 {
@@ -116,5 +209,25 @@
   to {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .header {
+    padding: 15px;
+  }
+  
+  .brandText {
+    font-size: 18px;
+  }
+  
+  .cardsContainer {
+    padding: 15px;
+  }
+  
+  .currentCardWrapper,
+  .nextCardWrapper {
+    height: calc(100% - 30px);
   }
 }

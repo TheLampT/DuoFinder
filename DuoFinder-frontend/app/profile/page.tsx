@@ -409,7 +409,7 @@ export default function ProfilePage() {
             </section>
 
             <div className={styles.noteReadOnly}>
-              {editing ? 'Estás editando tu perfil.' : 'Tocá “Editar perfil” para modificar tus datos.'}
+              {editing ? 'Estás editando tu perfil.' : 'Tocá "Editar perfil" para modificar tus datos.'}
             </div>
           </aside>
         </div>

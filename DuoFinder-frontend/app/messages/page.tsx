@@ -255,11 +255,31 @@ const MessagesPage = () => {
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
     
     if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString('es-ES', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
     } else if (diffInHours < 48) {
-      return 'Yesterday';
+      return 'Ayer';
     } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      // Spanish month abbreviations
+      const monthNames = {
+        short: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 
+                'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+        long: ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+              'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+      };
+      
+      const day = date.getDate();
+      const month = monthNames.short[date.getMonth()];
+      const year = date.getFullYear();
+      
+      // Only show year if it's not the current year
+      if (year !== now.getFullYear()) {
+        return `${day} ${month} ${year}`;
+      } else {
+        return `${day} ${month}`;
+      }
     }
   };
 
@@ -280,11 +300,11 @@ const MessagesPage = () => {
       {/* Matches sidebar - conditionally rendered on mobile */}
       <div className={`${styles.matchesSidebar} ${showSidebar ? styles.active : ''}`}>
         <div className={styles.sidebarHeader}>
-          <h1>Messages</h1>
+          <h1>Mensajes</h1>
           <div className={styles.searchContainer}>
             <input
               type="text"
-              placeholder="Search matches..."
+              placeholder="Busca duos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={styles.searchInput}
@@ -369,7 +389,7 @@ const MessagesPage = () => {
                 className={styles.profileToggle}
                 onClick={() => setShowProfile(!showProfile)}
               >
-                {showProfile ? 'Chat' : 'Profile'}
+                {showProfile ? 'Chat' : 'Perfil'}
               </button>
             </div>
 
@@ -392,12 +412,12 @@ const MessagesPage = () => {
                 </div>
                 
                 <div className={styles.profileSection}>
-                  <h3>About</h3>
+                  <h3>Sobre mi</h3>
                   <p>{selectedMatch.user.bio}</p>
                 </div>
                 
                 <div className={styles.profileSection}>
-                  <h3>Favorite Games</h3>
+                  <h3>Juegos</h3>
                   <div className={styles.gameTags}>
                     {selectedMatch.user.favoriteGames.map((game, index) => (
                       <span key={index} className={styles.gameTag}>{game}</span>
@@ -406,16 +426,12 @@ const MessagesPage = () => {
                 </div>
                 
                 <div className={styles.profileSection}>
-                  <h3>Game Preferences</h3>
+                  <h3>Juegos preferidos</h3>
                   <div className={styles.gameTags}>
                     {selectedMatch.user.gamePreferences.map((game, index) => (
                       <span key={index} className={styles.gameTag}>{game}</span>
                     ))}
                   </div>
-                </div>
-                
-                <div className={styles.profileActions}>
-                  <button className={styles.inviteButton}>Invite to Play</button>
                 </div>
               </div>
             ) : (
@@ -425,7 +441,7 @@ const MessagesPage = () => {
                   {messages.map(message => (
                     <div
                       key={message.id}
-                      className={`${styles.message} ${message.senderId === 'me' ? styles.sent : styles.received}`}
+                      className={`${styles.message} ${message.senderId === 'yo' ? styles.sent : styles.received}`}
                     >
                       <div className={styles.messageContent}>
                         <p>{message.text}</p>
@@ -444,7 +460,7 @@ const MessagesPage = () => {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder="Type your message..."
+                    placeholder="Escribí tu mensaje..."
                     className={styles.messageInput}
                   />
                   <button
@@ -479,13 +495,13 @@ const MessagesPage = () => {
                 />
               </svg>
             </div>
-            <h2>Your Messages</h2>
-            <p>Select a match to start chatting</p>
+            <h2>Tus mensajes</h2>
+            <p>Selecciona un match para mandar un mensaje</p>
             <button
               onClick={() => router.push('/discover')}
               className={styles.findPartnersButton}
             >
-              Find Gaming Partners
+              Encontra tu proximo duo
             </button>
           </div>
         )}

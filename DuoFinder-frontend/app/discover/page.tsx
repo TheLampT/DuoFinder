@@ -5,6 +5,7 @@ import SwipeCard from '@/components/SwipeCard';
 import ProfileDetail from '@/components/ProfileDetail';
 import { profiles, Profile } from '@/test/mock/mockData';
 import styles from '@/styles/pages/discover.module.css';
+import Link from 'next/link';
 
 const Discover: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -13,6 +14,7 @@ const Discover: React.FC = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const swipeCardRef = useRef<any>(null);
   const [showNoMore, setShowNoMore] = useState(false);
+
 
   useEffect(() => {
     if (currentIndex >= profiles.length) {
@@ -77,7 +79,14 @@ const Discover: React.FC = () => {
   return (
     <div className={styles.discoverContainer}>
       <header className={styles.header}>
-        <h1>DuoFinder</h1>
+        <Link href="/" className={styles.brand}>
+          <img src="/favicon.ico" alt="DuoFinder" className={styles.logo} />
+          <span className={styles.brandText}>DuoFinder</span>
+        </Link>
+        
+        <div className={styles.navButtons}>
+          <Link href="/preferences" className={styles.settingsBtn}>⚙️</Link>
+        </div>
       </header>
 
       <div className={styles.cardsContainer}>
