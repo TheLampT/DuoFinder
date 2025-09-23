@@ -1,0 +1,155 @@
+/* Theme variables for SwipeCard */
+:root[data-theme="dark"] {
+  --card-bg: #121826;
+  --card-text: #e8eaf0;
+  --card-muted: #a7b0c0;
+  --card-outline: #2a3445;
+  --tag-bg: #2a3445;
+  --tag-text: #a7b0c0;
+  --more-tag-bg: #1a2438;
+  --more-tag-text: #8894a8;
+  --info-button-bg: rgba(255, 255, 255, 0.15);
+  --info-button-hover: rgba(255, 255, 255, 0.25);
+  --info-button-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+:root[data-theme="light"] {
+  --card-bg: #ffffff;
+  --card-text: #1a1d21;
+  --card-muted: #6b7280;
+  --card-outline: #e5e7eb;
+  --tag-bg: #e0e7ff;
+  --tag-text: #4f46e5;
+  --more-tag-bg: #f1f5f9;
+  --more-tag-text: #64748b;
+  --info-button-bg: rgba(255, 255, 255, 0.9);
+  --info-button-hover: #ffffff;
+  --info-button-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.swipeCard {
+  position: relative;
+  width: 100%;
+  max-width: 350px;
+  height: 75vh;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  cursor: grab;
+  touch-action: none;
+  display: flex;
+  flex-direction: column;
+  will-change: transform, opacity;
+  background-color: var(--card-bg);
+  color: var(--card-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.swipeCard:active {
+  cursor: grabbing;
+}
+
+.cardContent {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.profileImage {
+  flex: 1;
+  background-size: cover;
+  background-position: center;
+  min-height: 60%;
+}
+
+.profileInfo {
+  padding: 20px;
+  background: var(--card-bg);
+  flex-shrink: 0;
+  border-top: 1px solid var(--card-outline);
+}
+
+.profileInfo h2 {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+  color: var(--card-text);
+}
+
+.profileInfo p {
+  color: var(--card-muted);
+  margin-bottom: 15px;
+  line-height: 1.4;
+}
+
+.interests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.interestTag {
+  background-color: var(--tag-bg);
+  color: var(--tag-text);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.infoButton {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: var(--info-button-bg);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: var(--info-button-shadow);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.infoButton:hover {
+  background: var(--info-button-hover);
+  transform: scale(1.1);
+}
+
+.moreInterests {
+  background-color: var(--more-tag-bg);
+  color: var(--more-tag-text);
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .swipeCard {
+    height: 70vh;
+    max-width: 320px;
+  }
+  
+  .profileInfo {
+    padding: 16px;
+  }
+  
+  .profileInfo h2 {
+    font-size: 1.3rem;
+  }
+  
+  .infoButton {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+  }
+}

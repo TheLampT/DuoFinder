@@ -1,0 +1,452 @@
+/* Theme variables for ProfileDetail */
+:root[data-theme="dark"] {
+  --modal-bg: #121826;
+  --modal-text: #e8eaf0;
+  --modal-muted: #a7b0c0;
+  --modal-outline: #2a3445;
+  --modal-overlay: rgba(0, 0, 0, 0.8);
+  --section-border: #2a3445;
+  --tag-bg: #2a3445;
+  --tag-text: #a7b0c0;
+  --close-button-bg: rgba(255, 255, 255, 0.1);
+  --close-button-hover: rgba(255, 255, 255, 0.2);
+  --gradient-overlay: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+  --feedback-bg: rgba(30, 35, 48, 0.95);
+  --feedback-border: rgba(255, 255, 255, 0.1);
+  --feedback-text: #e8eaf0;
+  --feedback-subtext: #a7b0c0;
+  --game-item-bg: #1a2438;
+  --game-item-border: #2a3445;
+  --game-name: #e8eaf0;
+  --skill-level: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --ranked-bg: rgba(212, 175, 55, 0.15);
+  --casual-bg: rgba(72, 187, 120, 0.15);
+}
+
+:root[data-theme="light"] {
+  --modal-bg: #ffffff;
+  --modal-text: #1a1d21;
+  --modal-muted: #6b7280;
+  --modal-outline: #e5e7eb;
+  --modal-overlay: rgba(0, 0, 0, 0.7);
+  --section-border: #e5e7eb;
+  --tag-bg: #e0e7ff;
+  --tag-text: #4f46e5;
+  --close-button-bg: rgba(0, 0, 0, 0.1);
+  --close-button-hover: rgba(0, 0, 0, 0.2);
+  --gradient-overlay: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+  --feedback-bg: rgba(255, 255, 255, 0.95);
+  --feedback-border: rgba(0, 0, 0, 0.1);
+  --feedback-text: #1f2937;
+  --feedback-subtext: #6b7280;
+  --game-item-bg: #f8f9fa;
+  --game-item-border: #e9ecef;
+  --game-name: #2d3748;
+  --skill-level: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --ranked-bg: rgba(212, 175, 55, 0.1);
+  --casual-bg: rgba(72, 187, 120, 0.1);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--modal-overlay);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal {
+  background: var(--modal-bg);
+  border-radius: 20px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: slideUp 0.3s ease;
+  color: var(--modal-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.closeButton {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: var(--close-button-bg);
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--modal-text);
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: var(--close-button-hover);
+  transform: scale(1.1);
+}
+
+.profileHeader {
+  position: relative;
+  padding-bottom: 20px;
+}
+
+.profileImage {
+  height: 300px;
+  background-size: cover;
+  background-position: center;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.profileBasicInfo {
+  padding: 20px;
+  background: var(--gradient-overlay);
+  color: white;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.profileBasicInfo h2 {
+  margin: 0 0 5px 0;
+  font-size: 1.8rem;
+}
+
+.detailsSection,
+.interestsSection {
+  padding: 20px;
+  border-bottom: 1px solid var(--section-border);
+}
+
+.detailsSection h3,
+.interestsSection h3 {
+  margin: 0 0 15px 0;
+  color: var(--modal-text);
+}
+
+.detailsSection p {
+  color: var(--modal-muted);
+  line-height: 1.5;
+}
+
+.interests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.interestTag {
+  background-color: var(--tag-bg);
+  color: var(--tag-text);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.actionButtons {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  padding: 25px;
+}
+
+.dislikeButton, .likeButton {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: none;
+  font-size: 1.8rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.likeButton:hover, .dislikeButton:hover {
+  transform: scale(1.15);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.likeButton:active, .dislikeButton:active {
+  transform: scale(0.95);
+}
+
+.dislikeButton {
+  background-color: var(--modal-bg);
+  color: #fd5c63;
+  border: 2px solid #fd5c63;
+}
+
+.dislikeButton:hover {
+  background-color: #fd5c63;
+  color: white;
+}
+
+.likeButton {
+  background-color: var(--modal-bg);
+  color: #4ade80;
+  border: 2px solid #4ade80;
+}
+
+.likeButton:hover {
+  background-color: #4ade80;
+  color: white;
+}
+
+/* Add animation for button clicks */
+@keyframes buttonClick {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+.likeButton:active, .dislikeButton:active {
+  animation: buttonClick 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .modal {
+    max-width: 100%;
+    border-radius: 20px;
+    max-height: 100vh;
+  }
+  
+  .profileImage {
+    height: 250px;
+  }
+  
+  .actionButtons {
+    gap: 30px;
+    padding: 20px;
+  }
+  
+  .dislikeButton, .likeButton {
+    width: 60px;
+    height: 60px;
+    font-size: 1.6rem;
+  }
+}
+
+.gameSkillsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.gameSkillItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: var(--game-item-bg);
+  border-radius: 16px;
+  border: 1px solid var(--game-item-border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gameSkillItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.gameInfo {
+  flex: 1;
+}
+
+.gameHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.gameName {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--game-name);
+}
+
+.skillLevel {
+  font-size: 14px;
+  color: var(--modal-muted);
+  font-weight: 600;
+  background: var(--skill-level);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.rankedIcon, .casualIcon {
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.rankedIcon {
+  color: #d4af37;
+  background: var(--ranked-bg);
+  padding: 2px;
+}
+
+.casualIcon {
+  color: #48bb78;
+  background: var(--casual-bg);
+  padding: 2px;
+}
+
+/* Animation for icons */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.rankedIcon:hover, .casualIcon:hover {
+  animation: pulse 0.5s ease;
+}
+
+.copyFeedback {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  animation: slideInDown 0.3s ease, slideOutUp 0.3s ease 1.7s forwards;
+}
+
+.feedbackContent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--feedback-bg);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--feedback-border);
+  min-width: 280px;
+}
+
+.feedbackIcon {
+  font-size: 20px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  border-radius: 50%;
+  color: white;
+  flex-shrink: 0;
+}
+
+.feedbackText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.feedbackMain {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--feedback-text);
+}
+
+.feedbackSub {
+  font-size: 12px;
+  color: var(--feedback-subtext);
+  font-weight: 500;
+}
+
+/* Animations for feedback modal */
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -100%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes slideOutUp {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -100%);
+  }
+}
+
+/* Responsive design for feedback modal */
+@media (max-width: 480px) {
+  .copyFeedback {
+    top: 10px;
+    width: 90%;
+  }
+  
+  .feedbackContent {
+    padding: 14px 16px;
+    min-width: auto;
+  }
+  
+  .feedbackIcon {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+  }
+  
+  .feedbackMain {
+    font-size: 13px;
+  }
+  
+  .feedbackSub {
+    font-size: 11px;
+  }
+  
+  .gameSkillsGrid {
+    grid-template-columns: 1fr;
+  }
+}

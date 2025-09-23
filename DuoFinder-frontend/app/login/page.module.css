@@ -1,0 +1,147 @@
+:root{
+  --bg:#0b0f14;
+  --text:#e8eaf0;
+  --muted:#a7b0c0;
+  --outline:#2a3445;
+  --red:#e74a4a;
+  --purple:#2b1f5a;
+}
+
+/* lienzo */
+.shell{
+  min-height:100svh;
+  display:grid;
+  place-items:center;
+  background:var(--bg);
+  padding:24px;
+}
+
+/* tarjeta 2 paneles */
+.card{
+  width:min(980px, 100%);
+  background:#fff;
+  border-radius:22px;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns: 1.05fr .95fr;
+  box-shadow:0 22px 60px rgba(0,0,0,.45);
+  border:1px solid rgba(255,255,255,.04);
+}
+
+/* IZQUIERDA (form) */
+.left{
+  background:#ffffff;
+  color:#111827;
+  padding:32px 28px 28px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+/* DuoFinder arriba a la izquierda (más grande) */
+.logoRow{
+  display:flex; align-items:center; gap:12px;
+  font-weight:900; letter-spacing:.3px;
+}
+.logoRow img{ width:40px; height:40px; border-radius:10px; }
+.logoRow span{ font-size:20px; font-weight:900; }
+
+.welcome{ margin:6px 0 4px; font-size:22px; font-weight:900; }
+.sub{ margin:0 0 10px; color:#6b7280; font-size:13px; }
+
+.form{ display:flex; flex-direction:column; gap:12px; }
+.label{ font-size:13px; color:#6b7280; }
+.input{
+  width:100%;
+  padding:12px 14px;
+  border-radius:999px;
+  border:1px solid #e5e7eb;
+  background:#f7f9fc;
+  color:#111827;
+  outline:none;
+  transition:border-color .15s, box-shadow .15s, background .15s;
+}
+.input:focus{
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(43,31,90,.18);
+  background:#fff;
+}
+
+.btn{
+  margin-top:6px;
+  padding:12px 18px;
+  border-radius:999px;
+  border:1px solid var(--red);
+  background: linear-gradient(90deg, #ff7a7a, var(--red));
+  color:#fff;
+  font-weight:900;
+  letter-spacing:.3px;
+  cursor:pointer;
+  transition: filter .15s, transform .02s;
+}
+.btn:hover{ filter:brightness(1.05); }
+.btn:active{ transform:translateY(1px); }
+.btn:disabled{ opacity:.6; cursor:not-allowed; }
+
+.small{ color:#6b7280; font-size:13px; margin-top:8px; }
+.link{ color:var(--red); text-decoration:none; }
+.link:hover{ text-decoration:underline; }
+
+/* DERECHA (imagen + overlays) */
+.right{
+  position:relative;
+  background-size:cover;
+  background-position:center;
+  min-height:420px;
+  isolation:isolate;
+}
+.right::before{
+  content:"";
+  position:absolute; inset:0;
+  background: linear-gradient(0deg, rgba(231,74,74,.75), rgba(231,74,74,.75));
+  mix-blend-mode:multiply;
+  z-index:0;
+}
+.right::after{
+  content:"";
+  position:absolute; inset:0;
+  background: linear-gradient(to bottom right, rgba(231,74,74,.7), rgba(11,15,20,.6));
+  z-index:0;
+}
+
+/* Marca centrada en el medio (logo + DuoFinder + tagline) */
+.brandMark{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  padding:0 16px;
+  text-align:center;
+  color:#fff;
+  z-index:1;
+}
+.brandMark img{ width:56px; height:56px; border-radius:12px; }
+.brandMark strong{
+  font-size:34px;
+  line-height:1;
+  letter-spacing:.6px;
+  text-shadow:0 8px 24px rgba(0,0,0,.45);
+}
+.brandMark p{
+  margin:0;
+  font-size:14px;
+  line-height:1.2;
+  opacity:.95;
+  text-shadow:0 6px 20px rgba(0,0,0,.4);
+}
+
+/* Responsive */
+@media (max-width: 860px){
+  .card{ grid-template-columns:1fr; }
+  .right{ order:-1; min-height:280px; }
+  .left{ padding:26px 20px; }
+}
