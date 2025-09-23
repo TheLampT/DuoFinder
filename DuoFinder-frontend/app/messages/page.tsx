@@ -299,8 +299,9 @@ const MessagesPage = () => {
     <div className={styles.messagesContainer}>
       {/* Matches sidebar - conditionally rendered on mobile */}
       <div className={`${styles.matchesSidebar} ${showSidebar ? styles.active : ''}`}>
-        <div className={styles.sidebarHeader}>
-          <h1>Mensajes</h1>
+          <div className={styles.sidebarHeader}>
+            <img src="/favicon.ico" alt="DuoFinder" className={styles.logo} />
+            <span className={styles.brandText}>Mensajes</span>
           <div className={styles.searchContainer}>
             <input
               type="text"
