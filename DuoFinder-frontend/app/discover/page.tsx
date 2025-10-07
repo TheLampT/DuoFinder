@@ -79,10 +79,10 @@ const Discover: React.FC = () => {
   return (
     <div className={styles.discoverContainer}>
       <header className={styles.header}>
-        <Link href="/" className={styles.brand}>
+        <div className={styles.brand}>
           <img src="/favicon.ico" alt="DuoFinder" className={styles.logo} />
-          <span className={styles.brandText}>DuoFinder</span>
-        </Link>
+          <span className={styles.brandText}>Descubrí</span>
+        </div>
         
         <div className={styles.navButtons}>
           <Link href="/preferences" className={styles.settingsBtn}>⚙️</Link>
@@ -115,8 +115,8 @@ const Discover: React.FC = () => {
           </>
         ) : (
           <div className={`${styles.noMoreProfiles} ${showNoMore ? styles.visible : ''}`}>
-            <h2>No more profiles!</h2>
-            <p>Check back later for new matches</p>
+            <h2>No hay más perfiles!</h2>
+            <p>Volve luego o ajusta tus preferencias para seguir buscando</p>
           </div>
         )}
       </div>

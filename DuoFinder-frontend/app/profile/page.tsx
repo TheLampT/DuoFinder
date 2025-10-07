@@ -300,21 +300,6 @@ export default function ProfilePage() {
                 <div className={styles.counter}>{(profile.bio ?? '').length}/3000</div>
               </div>
             </div>
-
-            {/* Buscando */}
-            <div className={styles.section}>
-              <h3 className={styles.sectionTitle}>Buscando</h3>
-              <div className={styles.chips}>
-                {SEEKING_OPTIONS.map((opt) => (
-                  <button key={opt} type="button"
-                          className={`${styles.chip} ${selectedSeeking.has(opt) ? styles.chipSelected : ''}`}
-                          onClick={()=>editing && toggleSeeking(opt)} disabled={!editing}>
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Acciones */}
             <div className={styles.actions}>
               <button className={styles.btn} type="submit" disabled={!editing || saving}>
