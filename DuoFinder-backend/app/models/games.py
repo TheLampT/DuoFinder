@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, ForeignKey,Text
+from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy.orm import relationship
 from app.db.connection import Base
 
 class Games(Base):
@@ -6,8 +7,11 @@ class Games(Base):
     __table_args__ = {"schema": "dbo"}
 
     ID = Column(Integer, primary_key=True, index=True)
-    GenreId = Column(Integer, ForeignKey("dbo.MainGenre.ID"))
-    RankId = Column(Integer, ForeignKey("dbo.Ranks.ID"))
     GameName = Column(String(200), nullable=False)
-    Description = Column(Text)
-    ReleasedYear = Column(Integer)
+    Description = Column(Text, nullable=True)
+    ReleasedYear = Column(Integer, nullable=True)
+
+    # Relaciones
+    game_ranks = relationship("GameRanks", back_populates="game", lazy="selectin", cascade="all, delete-orphan")
+    user_skills = relationship("UserGamesSkill", back_populates="game", lazy="selectin", cascade="all, delete-orphan")
+    communities = relationship("CommunitysGames", back_populates="game", lazy="selectin", cascade="all, delete-orphan")

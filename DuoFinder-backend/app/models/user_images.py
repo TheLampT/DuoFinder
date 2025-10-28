@@ -11,3 +11,5 @@ class UserImages(Base):
     UserID = Column(Integer, ForeignKey("dbo.User.ID"), nullable=False)
     ImageURL = Column(String(500), nullable=False)
     IsPrimary = Column(Boolean, nullable=False, server_default="0")
+
+    user = relationship("User", back_populates="images")

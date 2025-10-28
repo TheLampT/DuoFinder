@@ -4,7 +4,3 @@ from .user_images import UserImages
 from .user_game_skill import UserGamesSkill
 from .games import Games
 from .matches import Matches
-from .games_tags import GamesTags
-from .tags import Tags
-from .ranks import Ranks
-from .main_genre import MainGenre

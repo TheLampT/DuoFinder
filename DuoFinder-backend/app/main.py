@@ -17,6 +17,7 @@ from sqlalchemy import (
 )
 from datetime import date
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from app.routers import games
 
 # ───────────────────────────
 # Configuración (.env)
@@ -163,3 +164,4 @@ app.include_router(user.router,      prefix="/users",       tags=["users"])
 app.include_router(match.router,     prefix="/matches",     tags=["matches"])
 app.include_router(chat.router,      prefix="/chats",       tags=["chats"])
 app.include_router(community.router, prefix="/communities", tags=["communities"])
+app.include_router(games.router, prefix="/api", tags=["Games"])
