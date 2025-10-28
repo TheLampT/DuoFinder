@@ -30,7 +30,7 @@ class GameSkillUpdate(BaseModel):
     game_name: Optional[str] = None
     skill_level: Optional[str] = None
     is_ranked: Optional[bool] = None
-    game_rank_local_id: Optional[int] = None
+    Game_rank_local_id: Optional[int] = None
     rank_name: Optional[str] = None
 
 
@@ -70,7 +70,7 @@ def get_my_profile(
             UserGamesSkill.GameId.label("game_id"),
             UserGamesSkill.SkillLevel.label("skill_level"),
             UserGamesSkill.IsRanked.label("is_ranked"),
-            UserGamesSkill.Game_rank_local_Id.label("rank_local_id"),
+            UserGamesSkill.Game_rank_local_id.label("rank_local_id"),
             Games.GameName.label("game_name"),
             GameRanks.Rank_name.label("rank_name"),
         )
@@ -79,7 +79,7 @@ def get_my_profile(
             GameRanks,
             and_(
                 GameRanks.Game_id == UserGamesSkill.GameId,
-                GameRanks.Local_rank_id == UserGamesSkill.Game_rank_local_Id,
+                GameRanks.Local_rank_id == UserGamesSkill.Game_rank_local_id,
             ),
         )
         .filter(UserGamesSkill.UserID == current_user.ID)
@@ -94,7 +94,7 @@ def get_my_profile(
                 game_name=row.game_name,
                 skill_level=row.skill_level,
                 is_ranked=row.is_ranked,
-                game_rank_local_id=row.rank_local_id,
+                Game_rank_local_id=row.rank_local_id,
                 rank_name= row.rank_name,
             )
         )
@@ -141,7 +141,7 @@ def update_profile(
                 GameId=game.game_id,
                 SkillLevel=game.skill_level,
                 IsRanked=game.is_ranked,
-                Game_rank_local_id=game.game_rank_local_id
+                Game_rank_local_id=game.Game_rank_local_id
             )
             db.add(user_game_skill)
 
@@ -185,7 +185,7 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
             UserGamesSkill.GameId.label("game_id"),
             UserGamesSkill.SkillLevel.label("skill_level"),
             UserGamesSkill.IsRanked.label("is_ranked"),
-            UserGamesSkill.Game_rank_local_Id.label("rank_local_id"),
+            UserGamesSkill.Game_rank_local_id.label("rank_local_id"),
             Games.GameName.label("game_name"),
             GameRanks.Rank_name.label("rank_name"),  # ← nombre del rango
         )
@@ -194,7 +194,7 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
             GameRanks,
             and_(
                 GameRanks.Game_id == UserGamesSkill.GameId,
-                GameRanks.Local_rank_id == UserGamesSkill.Game_rank_local_Id,
+                GameRanks.Local_rank_id == UserGamesSkill.Game_rank_local_id,
             ),
         )
         .filter(UserGamesSkill.UserID == user_id)
@@ -209,7 +209,7 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
                 game_name=r.game_name,
                 skill_level=r.skill_level,
                 is_ranked=r.is_ranked,
-                game_rank_local_id=r.rank_local_id,
+                Game_rank_local_id=r.rank_local_id,
                 rank_name=r.rank_name,
             )
         )
