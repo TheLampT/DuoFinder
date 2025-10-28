@@ -3,8 +3,8 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from datetime import date, datetime
 from typing import List, Optional
-from app.utils.security import hash_password
 
+from app.utils.security import hash_password
 from app.db.connection import get_db
 from app.models.user import User
 from app.models.user_images import UserImages
@@ -17,19 +17,23 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 router = APIRouter()
 
-def calculate_age(birthdate: date) -> int:
+def calculate_age(birthdate: Optional[date]) -> int:
+    if not birthdate:
+        return 0
     today = datetime.today()
     return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
 
 class GameSkillUpdate(BaseModel):
     game_id: Optional[int] = None
+    game_name: Optional[str] = None
     skill_level: Optional[str] = None
     is_ranked: Optional[bool] = None
     game_rank_local_id: Optional[int] = None
 
 class UserProfile(BaseModel):
     username: Optional[str] = None
-    password: Optional[str] = None
+    password: Optional[str] = None 
+    email: Optional[EmailStr] = None
     bio: Optional[str] = ""
     server: Optional[str] = None
     discord: Optional[str] = None
@@ -37,20 +41,61 @@ class UserProfile(BaseModel):
     birthdate: Optional[date] = None
     games: Optional[List[GameSkillUpdate]] = None
 
-class UserProfileOut(UserProfile):
+class UserProfileOut(BaseModel):
+    username: str
+    email: EmailStr
+    bio: str
+    server: Optional[str] = None
+    discord: Optional[str] = None
+    tracker: Optional[str] = None
     age: int
-
+    games: List[GameSkillUpdate] = []
 
 
 @router.get("/me", response_model=UserProfileOut)
-def get_my_profile(current_user: User = Depends(get_current_user)):
-    return {
-        "username": current_user.Username,
-        "email": current_user.Mail,
-        "bio": current_user.Bio or "",
-        "age": calculate_age(current_user.BirthDate),
-    }
+def get_my_profile(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    user = db.query(User).filter(User.ID == current_user.ID).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
+    rows = (
+        db.query(
+            UserGamesSkill.GameId.label("game_id"),
+            UserGamesSkill.SkillLevel.label("skill_level"),
+            UserGamesSkill.IsRanked.label("is_ranked"),
+            UserGamesSkill.Game_rank_local_id.label("rank_local_id"),
+            Games.GameName.label("game_name"),
+        )
+        .join(Games, UserGamesSkill.GameId == Games.ID)
+        .filter(UserGamesSkill.UserID == current_user.ID)
+        .all()
+    )
+
+    games_payload: List[GameSkillUpdate] = []
+    for row in rows:
+        games_payload.append(
+            GameSkillUpdate(
+                game_id=row.game_id,
+                game_name=row.game_name,
+                skill_level=row.skill_level,
+                is_ranked=row.is_ranked,
+                game_rank_local_id=row.rank_local_id,
+            )
+        )
+
+    return UserProfileOut(
+        username=user.Username,
+        email=user.Mail,
+        bio=user.Bio or "",
+        server=user.Server,
+        discord=user.Discord,
+        tracker=user.Tracker,
+        age=calculate_age(user.BirthDate),
+        games=games_payload,
+    )
 @router.put("/me")
 def update_profile(
     profile: UserProfile,
@@ -58,7 +103,6 @@ def update_profile(
     db: Session = Depends(get_db)
 ):
     
-    # Actualiza solo si se pasó un valor
     if profile.username is not None:
         current_user.Username = profile.username
     if profile.password is not None:
@@ -76,10 +120,8 @@ def update_profile(
         current_user.BirthDate = profile.birthdate
 
     if profile.games is not None:
-        # Primero eliminamos los juegos anteriores del usuario
         db.query(UserGamesSkill).filter(UserGamesSkill.UserID == current_user.ID).delete()
 
-        # Luego insertamos los nuevos juegos
         for game in profile.games:
             user_game_skill = UserGamesSkill(
                 UserID=current_user.ID,
