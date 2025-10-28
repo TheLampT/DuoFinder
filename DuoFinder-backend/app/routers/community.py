@@ -6,7 +6,10 @@ from sqlalchemy.orm import Session
 
 from app.db.connection import get_db
 from app.models.user import User
-from app.models.community import Community, Communitys_Members, Communitys_Games
+from app.models.community import Community
+from app.models.communitys_members import CommunitysMembers
+from app.models.communitys_games import CommunitysGames
+
 from app.models.games import Games
 from app.routers.auth import get_current_user
 
