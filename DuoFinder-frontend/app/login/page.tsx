@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
+import { authService } from '../../lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,11 +26,23 @@ export default function LoginPage() {
 
     try {
       setSubmitting(true);
-      // Simulación (luego va tu fetch/axios al backend)
-      await new Promise((r) => setTimeout(r, 600));
+
+      // Use the typed auth service
+      const result = await authService.login(email, password);
+      console.log('Login successful:', result);
+      
+      // Store the token for future API calls
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('access_token', result.access_token);
+        localStorage.setItem('token_type', result.token_type);
+      }
+      
+      // Redirect to profile page on success
       router.replace(nextUrl);
-    } catch {
-      setError('No se pudo iniciar sesión.');
+      
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'No se pudo iniciar sesión. Intentalo de nuevo.');
     } finally {
       setSubmitting(false);
     }
@@ -38,7 +51,6 @@ export default function LoginPage() {
   return (
     <div className={styles.shell}>
       <div className={styles.card}>
-        {/* Panel izquierdo: formulario */}
         <section className={styles.left}>
           <div className={styles.logoRow}>
             <img src="/favicon.ico" alt="DuoFinder" />
@@ -62,6 +74,7 @@ export default function LoginPage() {
               placeholder="tu@correo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
             />
 
             <label className={styles.label} htmlFor="password">Contraseña</label>
@@ -74,6 +87,7 @@ export default function LoginPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
 
             <button className={styles.btn} type="submit" disabled={submitting}>
@@ -87,10 +101,8 @@ export default function LoginPage() {
           </p>
         </section>
 
-        {/* Panel derecho: imagen + gradiente */}
         <aside
           className={styles.right}
-          // Cambiá esta URL si querés usar una imagen tuya en /public
           style={{ backgroundImage: `url(https://picsum.photos/id/1011/1400/1000)` }}
           aria-hidden
         >
