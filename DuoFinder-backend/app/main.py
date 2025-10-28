@@ -6,6 +6,7 @@ from os import getenv
 from urllib.parse import quote_plus
 
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware  # ADD THIS IMPORT
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from passlib.context import CryptContext
@@ -70,8 +71,23 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")  # ojo: ajustado a /
 
 app = FastAPI(title="DuoFinder API")
 
+# ───────────────────────────
+# CORS Middleware - ADD THIS SECTION
+# ───────────────────────────
+origins = [
+    "http://localhost:3000",  # Next.js dev server
+    "http://localhost:3001",  # Alternative port
+    "https://duofinder-frontend.vercel.app",  # Your production frontend (update this)
+    # Add any other domains you need
+]
 
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods including OPTIONS
+    allow_headers=["*"],  # Allows all headers
+)
 
 # =========================
 # UTILS
