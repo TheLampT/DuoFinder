@@ -9,6 +9,8 @@ from app.db.connection import get_db
 from app.models.user import User
 from app.models.user_images import UserImages
 from app.models.user_game_skill import UserGamesSkill
+from app.models.game_ranks import GameRanks
+from sqlalchemy import and_
 from app.models.games import Games
 from app.routers.auth import get_current_user
 import os
@@ -29,6 +31,8 @@ class GameSkillUpdate(BaseModel):
     skill_level: Optional[str] = None
     is_ranked: Optional[bool] = None
     game_rank_local_id: Optional[int] = None
+    rank_name: Optional[str] = None
+
 
 class UserProfile(BaseModel):
     username: Optional[str] = None
@@ -66,10 +70,18 @@ def get_my_profile(
             UserGamesSkill.GameId.label("game_id"),
             UserGamesSkill.SkillLevel.label("skill_level"),
             UserGamesSkill.IsRanked.label("is_ranked"),
-            UserGamesSkill.Game_rank_local_id.label("rank_local_id"),
+            UserGamesSkill.Game_rank_local_Id.label("rank_local_id"),
             Games.GameName.label("game_name"),
+            GameRanks.Rank_name.label("rank_name"),
         )
         .join(Games, UserGamesSkill.GameId == Games.ID)
+        .outerjoin(
+            GameRanks,
+            and_(
+                GameRanks.Game_id == UserGamesSkill.GameId,
+                GameRanks.Local_rank_id == UserGamesSkill.Game_rank_local_Id,
+            ),
+        )
         .filter(UserGamesSkill.UserID == current_user.ID)
         .all()
     )
@@ -83,6 +95,7 @@ def get_my_profile(
                 skill_level=row.skill_level,
                 is_ranked=row.is_ranked,
                 game_rank_local_id=row.rank_local_id,
+                rank_name= row.rank_name,
             )
         )
 
@@ -192,5 +205,5 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
         "image": image_url,
         "server": user.Server,
         "discord": user.Discord,
-        "gameSkill": game_skill
+        "gameSkill": game_skill,
     }
