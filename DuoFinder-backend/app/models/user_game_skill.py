@@ -7,7 +7,7 @@ class UserGamesSkill(Base):
     __table_args__ = (
         # 👇 FK compuesta hacia Game_ranks(Game_id, LocalRank_id)
         ForeignKeyConstraint(
-            ["GameId", "Game_rank_local_Id"],
+            ["GameId", "Game_rank_local_id"],
             ["dbo.Game_ranks.Game_id", "dbo.Game_ranks.Local_rank_id"],
             name="fk_user_skill_gameranks",
         ),
@@ -18,7 +18,7 @@ class UserGamesSkill(Base):
     UserID = Column(Integer, ForeignKey("dbo.User.ID"), primary_key=True, index=True)
     GameId = Column(Integer, ForeignKey("dbo.Games.ID"), primary_key=True, index=True)
 
-    Game_rank_local_Id = Column(Integer, nullable=True)  # parte de la FK compuesta
+    Game_rank_local_id = Column(Integer, nullable=True)  # parte de la FK compuesta
     SkillLevel = Column(String(120), nullable=True)
     IsRanked = Column(Boolean, nullable=True)
 
