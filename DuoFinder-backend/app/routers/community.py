@@ -105,7 +105,7 @@ def create_community(
     db.flush()  # para obtener c.ID
 
     # agregar owner como miembro (role=owner)
-    db.add(Communitys_Members(
+    db.add(CommunitysMembers(
         Community_id=c.ID,
         User_id=current_user.ID,
         Role="owner",
@@ -114,7 +114,7 @@ def create_community(
     # asociar juegos si viene
     if payload.game_ids:
         for gid in set(payload.game_ids):
-            db.add(Communitys_Games(Community_id=c.ID, Game_id=gid))
+            db.add(CommunitysGames(Community_id=c.ID, Game_id=gid))
 
     db.commit()
     db.refresh(c)
@@ -155,12 +155,12 @@ def update_community(
     if payload.game_ids is not None:
         _ensure_games_exist(db, payload.game_ids)
         # borrar actuales
-        db.query(Communitys_Games).filter(
-            Communitys_Games.Community_id == c.ID
+        db.query(CommunitysGames).filter(
+            CommunitysGames.Community_id == c.ID
         ).delete(synchronize_session=False)
         # insertar nuevas (sin duplicados)
         for gid in set(payload.game_ids):
-            db.add(Communitys_Games(Community_id=c.ID, Game_id=gid))
+            db.add(CommunitysGames(Community_id=c.ID, Game_id=gid))
 
     db.commit()
     db.refresh(c)
@@ -181,8 +181,8 @@ def delete_community(
         raise HTTPException(status_code=403, detail="Only the owner can delete the community")
 
     # Si no tenés cascada en el modelo, borro explícitamente las dependencias
-    db.query(Communitys_Members).filter(Communitys_Members.Community_id == c.ID).delete(synchronize_session=False)
-    db.query(Communitys_Games).filter(Communitys_Games.Community_id == c.ID).delete(synchronize_session=False)
+    db.query(CommunitysMembers).filter(CommunitysMembers.Community_id == c.ID).delete(synchronize_session=False)
+    db.query(CommunitysGames).filter(CommunitysGames.Community_id == c.ID).delete(synchronize_session=False)
 
     db.delete(c)
     db.commit()
@@ -221,9 +221,9 @@ def get_my_communities(
     current_user: User = Depends(get_current_user),
 ):
     rows = (
-        db.query(Community, Communitys_Members.Role)
-        .join(Communitys_Members, Communitys_Members.Community_id == Community.ID)
-        .filter(Communitys_Members.User_id == current_user.ID)
+        db.query(Community, CommunitysMembers.Role)
+        .join(CommunitysMembers, CommunitysMembers.Community_id == Community.ID)
+        .filter(CommunitysMembers.User_id == current_user.ID)
         .order_by(Community.Community_name.asc())
         .all()
     )
