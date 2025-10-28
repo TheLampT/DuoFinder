@@ -28,17 +28,44 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(null);
 
-    const v = validate();
-    if (v) return setError(v);
+    const validationError = validate();
+    if (validationError) return setError(validationError);
 
     try {
       setSubmitting(true);
-      // Simulación (acá después va tu POST /auth/register)
-      await new Promise((r) => setTimeout(r, 700));
-      // Redirigimos a login (podés cambiar a /profile si querés auto-login luego)
+
+      console.log('Sending registration request...');
+      
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          username: username,
+          password: password,
+          birthdate: birthdate,
+        }),
+      });
+
+      console.log('Response status:', response.status);
+
+      const result = await response.json();
+      console.log('Response data:', result);
+
+      if (!response.ok) {
+        throw new Error(result.error || `Error ${response.status}: No se pudo crear la cuenta.`);
+      }
+
+      console.log('Registration successful:', result);
+      
+      // Redirect to login page on success
       router.replace('/login');
-    } catch {
-      setError('No se pudo crear la cuenta.');
+      
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      setError(err.message || 'No se pudo crear la cuenta. Intentalo de nuevo.');
     } finally {
       setSubmitting(false);
     }
@@ -47,7 +74,6 @@ export default function RegisterPage() {
   return (
     <div className={styles.shell}>
       <div className={styles.card}>
-        {/* Panel izquierdo: formulario */}
         <section className={styles.left}>
           <div className={styles.logoRow}>
             <img src="/favicon.ico" alt="DuoFinder" />
@@ -71,6 +97,7 @@ export default function RegisterPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               maxLength={32}
+              required
             />
 
             <label className={styles.label} htmlFor="email">Email</label>
@@ -82,6 +109,7 @@ export default function RegisterPage() {
               placeholder="tu@correo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
             />
 
             <label className={styles.label} htmlFor="password">Contraseña</label>
@@ -94,6 +122,7 @@ export default function RegisterPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
 
             <label className={styles.label} htmlFor="birthdate">Fecha de nacimiento</label>
@@ -103,6 +132,7 @@ export default function RegisterPage() {
               type="date"
               value={birthdate}
               onChange={(e) => setBirthdate(e.target.value)}
+              required
             />
 
             <button className={styles.btn} type="submit" disabled={submitting}>
@@ -116,7 +146,6 @@ export default function RegisterPage() {
           </p>
         </section>
 
-        {/* Panel derecho: imagen + gradiente */}
         <aside
           className={styles.right}
           style={{ backgroundImage: `url(https://picsum.photos/id/1015/1400/1000)` }}
