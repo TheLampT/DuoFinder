@@ -6,23 +6,12 @@ import styles from './page.module.css';
 import { profileService, UserProfile, UpdateProfileRequest } from '../../lib/auth';
 
 // Helpers
-function ageFrom(birth: string) {
-  if (!birth) return null;
-  const d = new Date(birth);
-  if (Number.isNaN(d.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - d.getFullYear();
-  const m = today.getMonth() - d.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age--;
-  return Math.max(0, age);
-}
-
 function truncate(text: string, n = 100) {
   if (!text) return '';
   return text.length > n ? text.slice(0, n - 1) + '…' : text;
 }
 
-// Catálogo mock (you'll need to get these from your backend eventually)
+// Game options for the chips
 const GAME_OPTIONS: Array<{ id: string; name: string; ranks: string[] }> = [
   { id: 'valorant', name: 'Valorant', ranks: ['Hierro','Bronce','Plata','Oro','Platino','Diamante','Ascendente','Inmortal','Radiante'] },
   { id: 'lol', name: 'League of Legends', ranks: ['Hierro','Bronce','Plata','Oro','Platino','Diamante','Maestro','Gran Maestro','Retador'] },
@@ -73,21 +62,22 @@ export default function ProfilePage() {
     }
   }
 
-  // Avatar handlers (you'll need to implement image upload separately)
-  function pickAvatar() { if (editing) fileInputRef.current?.click(); }
-  function onAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
-    // You'll need to implement image upload to your backend
-    console.log('Image upload would be implemented here');
-    e.currentTarget.value = '';
-  }
-  function removeAvatar() { 
-    if (editing) {
-      // Handle avatar removal
-      console.log('Avatar removal would be implemented here');
-    }
+  // Update game skill level
+  function updateGameSkill(gameId: number, field: string, value: any) {
+    if (!profile || !editing) return;
+    
+    setProfile(prev => {
+      if (!prev?.games) return prev;
+      
+      const updatedGames = prev.games.map(game => 
+        game.game_id === gameId ? { ...game, [field]: value } : game
+      );
+      
+      return { ...prev, games: updatedGames };
+    });
   }
 
-  // Games handlers (you'll need to adapt this to your backend structure)
+  // Game selection handlers (for future implementation)
   function toggleGame(gameId: string) {
     if (!editing || !profile) return;
     console.log('Game toggle would be implemented here');
@@ -98,10 +88,22 @@ export default function ProfilePage() {
     console.log('Rank update would be implemented here');
   }
 
-  // Seeking handlers
+  // Seeking handlers (for future implementation)
   function toggleSeeking(option: typeof SEEKING_OPTIONS[number]) {
     if (!editing || !profile) return;
     console.log('Seeking update would be implemented here');
+  }
+
+  // Avatar handlers
+  function pickAvatar() { if (editing) fileInputRef.current?.click(); }
+  function onAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
+    console.log('Image upload would be implemented here');
+    e.currentTarget.value = '';
+  }
+  function removeAvatar() { 
+    if (editing) {
+      console.log('Avatar removal would be implemented here');
+    }
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -114,17 +116,22 @@ export default function ProfilePage() {
     if (!profile.username.trim()) return setError('Ingresá un nombre de usuario.');
     if (!profile.email.trim()) return setError('Ingresá tu email.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) return setError('Email inválido.');
-    if (!profile.birthdate) return setError('Ingresá tu fecha de nacimiento.');
 
     try {
       setSaving(true);
 
       const updateData: UpdateProfileRequest = {
         username: profile.username,
-        bio: profile.bio,
-        discord: profile.discord,
-        birthdate: profile.birthdate,
-        // Add other fields as needed
+        bio: profile.bio || '',
+        discord: profile.discord || '',
+        server: profile.server || '',
+        tracker: profile.tracker || '',
+        games: profile.games?.map(game => ({
+          game_id: game.game_id,
+          skill_level: game.skill_level,
+          is_ranked: game.is_ranked,
+          game_rank_local_id: game.game_rank_local_id
+        }))
       };
 
       const result = await profileService.updateProfile(updateData);
@@ -145,7 +152,6 @@ export default function ProfilePage() {
 
   function onReset() {
     if (!editing) return;
-    // Reload original profile data
     profileService.getProfile().then(setProfile).catch(console.error);
     setOk(null);
     setError(null);
@@ -153,11 +159,8 @@ export default function ProfilePage() {
 
   async function onLogout() {
     try {
-      // Clear local storage
       localStorage.removeItem('access_token');
       localStorage.removeItem('token_type');
-      
-      // Redirect to login
       router.push('/login');
     } catch (err) {
       console.error('Logout error:', err);
@@ -180,8 +183,8 @@ export default function ProfilePage() {
     );
   }
 
-  const selectedGameIds = new Set<string>(); // You'll need to populate this from your games data
-  const selectedSeeking = new Set<string>(); // You'll need to populate this from your profile data
+  const selectedGameIds = new Set((profile.games ?? []).map((g) => g.game_id?.toString() ?? ''));
+  const selectedSeeking = new Set(['Competitivo']); // Default for now
 
   return (
     <div className={styles.page}>
@@ -197,12 +200,12 @@ export default function ProfilePage() {
             <img src="/favicon.ico" alt="DuoFinder" className={styles.heroLogo} />
             <h1 className={styles.title}>Mi Perfil</h1>
             <p className={styles.heroSub}>
-              Personalizá tu perfil para encontrar el dúo perfecto. Recordá guardar los cambios antes de salir!
+              Personalizá tu perfil para encontrar el dúo ideal. Recordá guardar los cambios antes de salir!
             </p>
             <div className={styles.heroBadges}>
-              {/* You can add badges based on profile data */}
               <span className={`${styles.badge} ${styles.badgePrimary}`}>Activo</span>
               {profile.age && <span className={styles.badge}>{profile.age} años</span>}
+              {profile.server && <span className={styles.badge}>Servidor: {profile.server}</span>}
             </div>
           </div>
         </header>
@@ -290,11 +293,12 @@ export default function ProfilePage() {
             <div className={styles.section}>
               <div className={styles.row2}>
                 <div className={styles.field}>
-                  <label className={styles.label} htmlFor="username">Nombre</label>
+                  <label className={styles.label} htmlFor="username">Usuario</label>
                   <input 
                     id="username" 
                     className={styles.input} 
                     type="text"
+                    placeholder="Tu nick"
                     value={profile.username} 
                     onChange={(e) => onChange('username', e.target.value)}
                     maxLength={32} 
@@ -307,6 +311,8 @@ export default function ProfilePage() {
                     id="email" 
                     className={styles.input} 
                     type="email"
+                    autoComplete="email"
+                    placeholder="tu@correo.com"
                     value={profile.email} 
                     onChange={(e) => onChange('email', e.target.value)}
                     disabled={!editing}
@@ -314,17 +320,6 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className={styles.row2}>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="birthdate">Fecha de nacimiento</label>
-                  <input 
-                    id="birthdate" 
-                    className={styles.input} 
-                    type="date"
-                    value={profile.birthdate || ''} 
-                    onChange={(e) => onChange('birthdate', e.target.value)}
-                    disabled={!editing}
-                  />
-                </div>
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="discord">Discord</label>
                   <input 
@@ -337,6 +332,30 @@ export default function ProfilePage() {
                     disabled={!editing}
                   />
                 </div>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="server">Servidor</label>
+                  <input 
+                    id="server" 
+                    className={styles.input} 
+                    type="text" 
+                    placeholder="Ej: LAS, NA, EU"
+                    value={profile.server || ''} 
+                    onChange={(e) => onChange('server', e.target.value)}
+                    disabled={!editing}
+                  />
+                </div>
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="tracker">Tracker</label>
+                <input 
+                  id="tracker" 
+                  className={styles.input} 
+                  type="text" 
+                  placeholder="https://tracker.gg/valorant"
+                  value={profile.tracker || ''} 
+                  onChange={(e) => onChange('tracker', e.target.value)}
+                  disabled={!editing}
+                />
               </div>
             </div>
 
@@ -381,7 +400,7 @@ export default function ProfilePage() {
             </div>
           </form>
 
-          {/* DERECHA: PREVIEW */}
+          {/* DERECHA: PREVIEW + JUEGOS & RANGOS */}
           <aside className={styles.previewCol}>
             {/* PREVIEW */}
             <div className={`${styles.previewCard} ${styles.sticky}`}>
@@ -398,18 +417,32 @@ export default function ProfilePage() {
                 <div className={styles.previewPills}>
                   <span className={`${styles.pill} ${styles.pillPrimary}`}>Activo</span>
                   {profile.discord && <span className={styles.pill}>Discord: {profile.discord}</span>}
+                  {profile.server && <span className={styles.pill}>Servidor: {profile.server}</span>}
                 </div>
               </div>
             </div>
 
-            {/* Note about games feature */}
-            <div className={styles.sideCard}>
-              <h3 className={styles.sectionTitle}>Juegos & Rangos</h3>
-              <p className={styles.hint}>
-                La funcionalidad de juegos y rangos estará disponible pronto.
-                Mientras tanto, podés mencionar tus juegos en tu bio.
-              </p>
-            </div>
+            {/* JUEGOS & RANGOS */}
+            <section className={styles.sideCard}>
+              <h3 className={styles.sectionTitle}>Juegos & rangos</h3>
+
+              {(profile.games?.length ?? 0) > 0 ? (
+                <div className={styles.ranks}>
+                  {(profile.games ?? []).map((game) => (
+                    <div key={game.game_id} className={styles.rankRow}>
+                      <span className={styles.rankLabel}>{game.game_name}</span>
+                      <span className={styles.rankSelect}>
+                        {game.skill_level} {game.is_ranked ? '⚡' : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.hint}>
+                  Todavía no agregaste juegos a tu perfil. Editá tu perfil para agregar tus juegos y rangos.
+                </p>
+              )}
+            </section>
 
             <div className={styles.noteReadOnly}>
               {editing ? 'Estás editando tu perfil.' : 'Tocá "Editar perfil" para modificar tus datos.'}
