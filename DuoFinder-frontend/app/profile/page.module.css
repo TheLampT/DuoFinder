@@ -180,3 +180,50 @@
   .grid{ grid-template-columns:1fr; }
   .sticky{ position:static; }
 }
+
+/* Games display in the side card */
+.ranks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.rankRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+.rankLabel {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.rankSelect {
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Loading state */
+.loadingState {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+
+/* Make the game chips look disabled when not editing */
+.chips[style*="opacity: 0.6"] .chip {
+  cursor: default;
+}

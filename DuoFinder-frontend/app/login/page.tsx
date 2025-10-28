@@ -22,7 +22,7 @@ export default function LoginPage() {
 
     if (!email.trim()) return setError('Ingresá tu email.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError('Email inválido.');
-    if (password.length < 6) return setError('La contraseña debe tener al menos 6 caracteres.');
+    if (password.length < 4) return setError('La contraseña debe tener al menos 6 caracteres.');
 
     try {
       setSubmitting(true);
@@ -84,7 +84,7 @@ export default function LoginPage() {
               type="password"
               autoComplete="current-password"
               placeholder="••••••••"
-              minLength={6}
+              minLength={4}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
