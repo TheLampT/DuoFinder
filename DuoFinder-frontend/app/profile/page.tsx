@@ -352,6 +352,64 @@ export default function ProfilePage() {
   const selectedGameIds = new Set(profile.games?.map(g => g.game_id.toString()) ?? []);
   const availableGamesToAdd = availableGames.filter(game => !selectedGameIds.has(game.id.toString()));
 
+  const handleSaveClick = async (): Promise<void> => {
+    if (!editing || !profile) return;
+    
+    setOk(null);
+    setError(null);
+    
+    if (!profile.username.trim()) return setError('Ingresá un nombre de usuario.');
+    if (!profile.email.trim()) return setError('Ingresá tu email.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) return setError('Email inválido.');
+
+    try {
+      setSaving(true);
+
+      console.log('Current profile state:', profile);
+      console.log('Current games:', profile.games);
+
+      const updateData: UpdateProfileRequest = {
+        username: profile.username,
+        bio: profile.bio || '',
+        discord: profile.discord || '',
+        server: profile.server || '',
+        tracker: profile.tracker || '',
+        games: profile.games?.map(game => {
+          const baseData = {
+            game_id: game.game_id,
+            skill_level: game.skill_level || '',
+            is_ranked: game.is_ranked
+          };
+
+          if (game.is_ranked && game.game_rank_local_id) {
+            return {
+              ...baseData,
+              game_rank_local_id: game.game_rank_local_id
+            };
+          }
+
+          return baseData;
+        })
+      };
+
+      console.log('Final update data being sent:', updateData);
+
+      const result = await profileService.updateProfile(updateData);
+      setOk(result.message || 'Perfil actualizado exitosamente');
+      setEditing(false);
+      
+      const updatedProfile = await profileService.getProfile();
+      setProfile(updatedProfile);
+      
+    } catch (err: unknown) {
+      console.error('Failed to update profile:', err);
+      const errorMessage = err instanceof Error ? err.message : 'No se pudieron guardar los cambios.';
+      setError(errorMessage);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.card}>
@@ -410,7 +468,7 @@ export default function ProfilePage() {
                 <button 
                   type="button" 
                   className={styles.btn} 
-                  onClick={onSubmit as any} 
+                  onClick={handleSaveClick} 
                   disabled={saving}
                 >
                   {saving ? 'Guardando…' : 'Guardar'}
