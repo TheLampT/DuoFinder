@@ -674,3 +674,8 @@
   letter-spacing: 0.2px;
   font-size: 20px;
 }
+
+.avatarImage {
+  border-radius: 50%;
+  object-fit: cover;
+}
