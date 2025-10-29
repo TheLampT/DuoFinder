@@ -113,21 +113,6 @@ export default function Preferences() {
 
           <div className={styles.optionGroup}>
             <div className={styles.option}>
-              <span className={styles.optionLabel}>Estilo de juego</span>
-              <div className={styles.dropdownContainer}>
-                <select 
-                  value={playStyle}
-                  onChange={(e) => handlePlayStyleChange(e.target.value)}
-                  className={styles.dropdown}
-                >
-                  <option value="competitivo">Competitivo</option>
-                  <option value="casual">Casual</option>
-                  <option value="ambos">Ambos</option>
-                </select>
-              </div>
-            </div>
-
-            <div className={styles.option}>
               <div className={styles.ageRangeContainer}>
                 <span className={styles.optionLabel}>Rango de edad</span>
                 <div className={styles.ageRangeValues}>
