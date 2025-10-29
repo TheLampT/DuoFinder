@@ -183,7 +183,7 @@ input:checked + .toggleSlider:before {
   border-color: var(--accent);
 }
 
-input:checked + label:after {
+.toggleInput:checked + .toggleSlider::after {
   display: block;
 }
 
