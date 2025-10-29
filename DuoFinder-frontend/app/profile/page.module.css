@@ -168,7 +168,21 @@
 .ranks{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
 .rankRow{ display:grid; grid-template-columns: 1fr 150px auto; gap:10px; align-items:center; }
 .rankLabel{ color:var(--text-primary); font-size:14px; }
-.rankSelect{ background:var(--input-bg); color:var(--text-primary); border:1px solid var(--border-color); border-radius:10px; padding:8px 10px; }
+.rankSelect {
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  min-width: 120px;
+}
+
+.rankSelect:focus {
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-shadow);
+  outline: none;
+}
 .remove{ background:var(--btn-outline-bg); color:var(--text-primary); border:1px solid var(--border-color); border-radius:10px; padding:8px 10px; cursor:pointer; }
 .remove:disabled{ opacity:.6; cursor:not-allowed; }
 
