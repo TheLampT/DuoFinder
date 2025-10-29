@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 from datetime import date, datetime
 from typing import List, Optional
@@ -14,6 +14,7 @@ from sqlalchemy import and_
 from app.models.games import Games
 from app.routers.auth import get_current_user
 import os
+from sqlalchemy.orm import noload
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 
@@ -25,13 +26,19 @@ def calculate_age(birthdate: Optional[date]) -> int:
     today = datetime.today()
     return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
 
+# ===================== Schemas =====================
+
 class GameSkillUpdate(BaseModel):
     game_id: Optional[int] = None
     game_name: Optional[str] = None
     skill_level: Optional[str] = None
     is_ranked: Optional[bool] = None
-    Game_rank_local_id: Optional[int] = None
+    # Nombre canónico en snake_case para el API:
+    game_rank_local_id: Optional[int] = Field(default=None, alias="Game_rank_local_id")
     rank_name: Optional[str] = None
+
+    class Config:
+        populate_by_name = True  # permite usar ya sea game_rank_local_id o Game_rank_local_id al parsear
 
 
 class UserProfile(BaseModel):
@@ -55,6 +62,8 @@ class UserProfileOut(BaseModel):
     age: int
     games: List[GameSkillUpdate] = []
 
+
+# ===================== Endpoints =====================
 
 @router.get("/me", response_model=UserProfileOut)
 def get_my_profile(
@@ -94,8 +103,8 @@ def get_my_profile(
                 game_name=row.game_name,
                 skill_level=row.skill_level,
                 is_ranked=row.is_ranked,
-                Game_rank_local_id=row.rank_local_id,
-                rank_name= row.rank_name,
+                game_rank_local_id=row.rank_local_id,  # ← schema snake_case
+                rank_name=row.rank_name,
             )
         )
 
@@ -109,17 +118,18 @@ def get_my_profile(
         age=calculate_age(user.BirthDate),
         games=games_payload,
     )
+
+
 @router.put("/me")
 def update_profile(
     profile: UserProfile,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    
     if profile.username is not None:
         current_user.Username = profile.username
     if profile.password is not None:
-        UpdatedPassword=hash_password(profile.password)
+        UpdatedPassword = hash_password(profile.password)
         current_user.Password = UpdatedPassword
     if profile.bio is not None:
         current_user.Bio = profile.bio
@@ -133,19 +143,65 @@ def update_profile(
         current_user.BirthDate = profile.birthdate
 
     if profile.games is not None:
-        db.query(UserGamesSkill).filter(UserGamesSkill.UserID == current_user.ID).delete()
+        # 1) Borrar skills previas del usuario (sin sincronizar sesión para evitar flushes intermedios)
+        db.query(UserGamesSkill).filter(
+            UserGamesSkill.UserID == current_user.ID
+        ).delete(synchronize_session=False)
 
-        for game in profile.games:
-            user_game_skill = UserGamesSkill(
-                UserID=current_user.ID,
-                GameId=game.game_id,
-                SkillLevel=game.skill_level,
-                IsRanked=game.is_ranked,
-                Game_rank_local_id=game.Game_rank_local_id
-            )
-            db.add(user_game_skill)
+        # 2) Evitar autoflush durante validaciones/consultas auxiliares
+        with db.no_autoflush:
+            for g in (profile.games or []):
+                # Inicializar SIEMPRE
+                local_id = g.game_rank_local_id  # soporta alias Game_rank_local_id por el schema
+                is_ranked = bool(g.is_ranked)
 
-    
+                if not is_ranked:
+                    # No ranked => forzar NULL
+                    local_id = None
+                else:
+                    # Si es ranked y no vino local_id pero sí rank_name, derivarlo
+                    if local_id is None and g.rank_name:
+                        local_id = (
+                            db.query(GameRanks.Local_rank_id)
+                            .options(noload("*"))  # evita cargas de relaciones que disparen selectin
+                            .filter(
+                                GameRanks.Game_id == g.game_id,
+                                GameRanks.Rank_name == g.rank_name
+                            )
+                            .scalar()
+                        )
+
+                    # Validar existencia del par (game_id, local_id) en Game_ranks
+                    if local_id is None:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"is_ranked=true requiere game_rank_local_id válido (o rank_name válido) para game_id={g.game_id}"
+                        )
+
+                    exists = (
+                        db.query(GameRanks)
+                        .options(noload("*"))
+                        .filter(
+                            GameRanks.Game_id == g.game_id,
+                            GameRanks.Local_rank_id == local_id
+                        )
+                        .first()
+                    )
+                    if not exists:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"El par (game_id={g.game_id}, local_rank_id={local_id}) no existe en Game_ranks"
+                        )
+
+                # Insertar el registro normalizado
+                rec = UserGamesSkill(
+                    UserID=current_user.ID,
+                    GameId=g.game_id,
+                    SkillLevel=g.skill_level,
+                    IsRanked=is_ranked,
+                    Game_rank_local_id=local_id
+                )
+                db.add(rec)
 
     db.commit()
     db.refresh(current_user)
@@ -173,13 +229,13 @@ def delete_my_account(
     db.commit()
     return {"message": "Cuenta eliminada exitosamente"}
 
+
 @router.get("/{user_id}", response_model=UserProfileOut)
 def get_user_profile(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.ID == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-    # Traer los juegos del usuario con nombre del juego y rango
     rows = (
         db.query(
             UserGamesSkill.GameId.label("game_id"),
@@ -187,7 +243,7 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
             UserGamesSkill.IsRanked.label("is_ranked"),
             UserGamesSkill.Game_rank_local_id.label("rank_local_id"),
             Games.GameName.label("game_name"),
-            GameRanks.Rank_name.label("rank_name"),  # ← nombre del rango
+            GameRanks.Rank_name.label("rank_name"),
         )
         .join(Games, UserGamesSkill.GameId == Games.ID)
         .outerjoin(
@@ -209,7 +265,7 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
                 game_name=r.game_name,
                 skill_level=r.skill_level,
                 is_ranked=r.is_ranked,
-                Game_rank_local_id=r.rank_local_id,
+                game_rank_local_id=r.rank_local_id,  # ← schema snake_case
                 rank_name=r.rank_name,
             )
         )
