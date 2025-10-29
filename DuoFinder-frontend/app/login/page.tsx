@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 import { authService } from '../../lib/auth';
 import Image from 'next/image';
 
-export default function LoginPage() {
+// Separate component that uses useSearchParams
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get('next') || '/profile';
@@ -117,8 +118,8 @@ export default function LoginPage() {
             <Image 
               src="/favicon.ico" 
               alt="DuoFinder" 
-              width={40}  // adjust as needed
-              height={40} // adjust as needed
+              width={40}
+              height={40}
             />
             <strong>DuoFinder</strong>
             <p>Encontrá tu dúo ideal para jugar.</p>
@@ -126,5 +127,22 @@ export default function LoginPage() {
         </aside>
       </div>
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className={styles.shell}>
+        <div className={styles.card}>
+          <div style={{textAlign: 'center', padding: '2rem'}}>
+            Cargando...
+          </div>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
