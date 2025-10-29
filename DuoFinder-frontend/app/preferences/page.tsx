@@ -84,6 +84,7 @@ export default function Preferences() {
                 <input 
                   type="checkbox" 
                   id="darkMode" 
+                  className={styles.toggleInput}
                   checked={isDarkMode}
                   onChange={(e) => handleThemeChange(e.target.checked)}
                 />
@@ -101,6 +102,7 @@ export default function Preferences() {
                 <input 
                   type="checkbox" 
                   id="notifications" 
+                  className={styles.toggleInput}
                   checked={notifications}
                   onChange={(e) => handleNotificationsChange(e.target.checked)}
                 />

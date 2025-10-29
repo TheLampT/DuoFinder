@@ -204,8 +204,11 @@
 /* fondo oscuro para TODA la pantalla, sin centrar nada desde body */
 html, body{
   height:100%;
+  width: 100%;
   max-width:100vw;
   overflow-x:hidden;
+  margin: 0;
+  padding: 0;
 }
 
 body{

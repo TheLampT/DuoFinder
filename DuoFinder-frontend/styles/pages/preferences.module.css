@@ -179,7 +179,7 @@ input:checked + .toggleSlider:before {
   transform: translate(-50%, -50%);
 }
 
-input:checked + label {
+.toggleInput:checked + .toggleSlider {
   border-color: var(--accent);
 }
 
