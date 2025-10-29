@@ -3,24 +3,19 @@
 import Link from "next/link";
 import styles from "../../styles/pages/preferences.module.css";
 import { useState, useEffect } from "react";
+import Image from 'next/image';
 
 export default function Preferences() {
   const [notifications, setNotifications] = useState<boolean>(true);
-  const [language, setLanguage] = useState<string>("es");
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
-  const [playStyle, setPlayStyle] = useState<string>("ambos");
   const [ageRange, setAgeRange] = useState<[number, number]>([18, 40]);
 
   useEffect(() => {
     // Load saved preferences
     const savedNotifications = localStorage.getItem('notifications');
-    const savedLanguage = localStorage.getItem('language');
-    const savedPlayStyle = localStorage.getItem('playStyle');
     const savedAgeRange = localStorage.getItem('ageRange');
     
     if (savedNotifications) setNotifications(savedNotifications === 'true');
-    if (savedLanguage) setLanguage(savedLanguage);
-    if (savedPlayStyle) setPlayStyle(savedPlayStyle);
     if (savedAgeRange) setAgeRange(JSON.parse(savedAgeRange));
     
     // Get current theme from document (avoids flash of wrong theme)
@@ -46,16 +41,6 @@ export default function Preferences() {
     localStorage.setItem('notifications', enabled.toString());
   };
 
-  const handleLanguageChange = (lang: string): void => {
-    setLanguage(lang);
-    localStorage.setItem('language', lang);
-  };
-
-  const handlePlayStyleChange = (style: string): void => {
-    setPlayStyle(style);
-    localStorage.setItem('playStyle', style);
-  };
-
   const handleAgeRangeChange = (min: number, max: number): void => {
     const newAgeRange: [number, number] = [min, max];
     setAgeRange(newAgeRange);
@@ -67,7 +52,13 @@ export default function Preferences() {
       {/* NAVBAR */}
       <nav className={styles.nav}>
         <div className={styles.brand}>
-          <img src="/favicon.ico" alt="DuoFinder" className={styles.logo} />
+          <Image 
+            src="/favicon.ico" 
+            alt="DuoFinder" 
+            width={40}  // adjust as needed
+            height={40} // adjust as needed
+            className={styles.logo}
+          />
           <span className={styles.brandText}>Preferencias</span>
         </div>
         <div style={{width: "100px"}}></div> {/* For spacing */}

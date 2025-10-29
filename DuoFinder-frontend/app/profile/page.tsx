@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import { profileService, UserProfile, UpdateProfileRequest, UserGame } from '../../lib/auth';
+import Image from 'next/image';
 
 // Helpers
 function truncate(text: string, n = 100) {
@@ -26,8 +27,6 @@ interface ApiGame {
     rank_order: number;
   }>;
 }
-
-const SEEKING_OPTIONS = ['Casual', 'Competitivo'] as const;
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -61,12 +60,13 @@ export default function ProfilePage() {
         }
         
         setProfile(userProfile);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to load profile:', err);
-        setError(err.message || 'Failed to load profile');
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load profile';
+        setError(errorMessage);
         
         // If unauthorized, redirect to login
-        if (err.message.includes('Authentication') || err.message.includes('401')) {
+        if (errorMessage.includes('Authentication') || errorMessage.includes('401')) {
           router.push('/login');
         }
       } finally {
@@ -95,9 +95,10 @@ export default function ProfilePage() {
       }
       const games: ApiGame[] = await response.json();
       setAvailableGames(games);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load games:', err);
-      setError('No se pudieron cargar los juegos disponibles.');
+      const errorMessage = err instanceof Error ? err.message : 'No se pudieron cargar los juegos disponibles.';
+      setError(errorMessage);
     } finally {
       setLoadingGames(false);
     }
@@ -297,9 +298,10 @@ export default function ProfilePage() {
       const updatedProfile = await profileService.getProfile();
       setProfile(updatedProfile);
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to update profile:', err);
-      setError(err.message || 'No se pudieron guardar los cambios.');
+      const errorMessage = err instanceof Error ? err.message : 'No se pudieron guardar los cambios.';
+      setError(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -326,7 +328,7 @@ export default function ProfilePage() {
       localStorage.removeItem('access_token');
       localStorage.removeItem('token_type');
       router.push('/login');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Logout error:', err);
     }
   }
@@ -361,7 +363,13 @@ export default function ProfilePage() {
           />
           <div className={styles.heroOverlay} />
           <div className={styles.heroContent}>
-            <img src="/favicon.ico" alt="DuoFinder" className={styles.heroLogo} />
+            <Image 
+              src="/favicon.ico" 
+              alt="DuoFinder" 
+              width={40}  // adjust as needed
+              height={40} // adjust as needed
+              className={styles.heroLogo}
+            />
             <h1 className={styles.title}>Mi Perfil</h1>
             <p className={styles.heroSub}>
               Personalizá tu perfil para encontrar el dúo ideal. Recordá guardar los cambios antes de salir!

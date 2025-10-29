@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 import { authService } from '../../lib/auth';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,9 +41,10 @@ export default function LoginPage() {
       // Redirect to profile page on success
       router.replace(nextUrl);
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      setError(err.message || 'No se pudo iniciar sesión. Intentalo de nuevo.');
+      const errorMessage = err instanceof Error ? err.message : 'No se pudo iniciar sesión. Intentalo de nuevo.';
+      setError(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -53,7 +55,12 @@ export default function LoginPage() {
       <div className={styles.card}>
         <section className={styles.left}>
           <div className={styles.logoRow}>
-            <img src="/favicon.ico" alt="DuoFinder" />
+            <Image 
+              src="/favicon.ico" 
+              alt="DuoFinder" 
+              width={40}
+              height={40}
+            />
             <span>DuoFinder</span>
           </div>
 
@@ -107,7 +114,12 @@ export default function LoginPage() {
           aria-hidden
         >
           <div className={styles.brandMark}>
-            <img src="/favicon.ico" alt="" />
+            <Image 
+              src="/favicon.ico" 
+              alt="DuoFinder" 
+              width={40}  // adjust as needed
+              height={40} // adjust as needed
+            />
             <strong>DuoFinder</strong>
             <p>Encontrá tu dúo ideal para jugar.</p>
           </div>

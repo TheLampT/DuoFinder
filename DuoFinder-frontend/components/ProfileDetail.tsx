@@ -41,24 +41,6 @@ const ProfileDetail: React.FC<ProfileDetailProps> = ({
     );
   };
 
-  // Copy Discord username to clipboard with nice feedback
-  const copyDiscordToClipboard = async () => {
-    if (profile.discord) {
-      try {
-        await navigator.clipboard.writeText(profile.discord);
-        setCopiedUsername(profile.discord);
-        setShowCopyFeedback(true);
-        
-        // Auto-hide after 2 seconds
-        setTimeout(() => {
-          setShowCopyFeedback(false);
-        }, 2000);
-      } catch (err) {
-        console.error('Failed to copy: ', err);
-      }
-    }
-  };
-
   return (
     <div className={styles['modal-overlay']} onClick={onClose}>
       {/* Copy Feedback Modal */}
