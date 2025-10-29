@@ -19,4 +19,4 @@ class GameRanks(Base):
     game = relationship("Games", back_populates="game_ranks", lazy="joined")
 
     # 👇 ahora es ONE-TO-MANY correcto (un rank local lo usan muchos UserGamesSkill)
-    user_skills = relationship("UserGamesSkill", back_populates="local_rank", lazy="selectin")
+    user_skills = relationship("UserGamesSkill", lazy="selectin")
