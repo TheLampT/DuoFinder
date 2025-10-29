@@ -33,8 +33,7 @@ class GameSkillUpdate(BaseModel):
     game_name: Optional[str] = None
     skill_level: Optional[str] = None
     is_ranked: Optional[bool] = None
-    # Nombre canónico en snake_case para el API:
-    game_rank_local_id: Optional[int] = Field(default=None, alias="Game_rank_local_id")
+    game_rank_local_id: Optional[int] = Field(default=None, alias="game_rank_local_id")
     rank_name: Optional[str] = None
 
     class Config:
