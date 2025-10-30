@@ -51,7 +51,6 @@ def calculate_age(birthdate: date) -> int:
 # -------------------- Endpoints --------------------
 @router.get("/suggestions", response_model=List[Suggestion])
 def get_match_suggestions(
-    game_id: int = Query(..., description="ID del juego"),
     server: Optional[str] = Query(None),
     is_ranked: Optional[bool] = Query(None),
     skip: int = Query(0, ge=0),
@@ -59,10 +58,31 @@ def get_match_suggestions(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    
+    my_id = current_user.ID
+
+    # Subquery con los usuarios a los que YA hice swipe (cualquier status)
+    swiped_subq = (
+        db.query(Matches.UserID2)
+          .filter(Matches.UserID1 == my_id)
+          .subquery()
+    )
+
+    # 1) Traer TODOS los juegos del usuario actual
+    my_skills = db.query(
+        UserGamesSkill.GameId,
+        UserGamesSkill.IsRanked,
+        UserGamesSkill.Game_rank_local_id
+    ).filter(UserGamesSkill.UserID == current_user.ID).all()
+
+    if not my_skills:
+        return []  # sin juegos, no hay sugerencias
+
+    # 2) Query base de candidatos
     q = (
         db.query(
             User,
-            UserGamesSkill,
+            UserGamesSkill,    # <- skills del candidato
             Games,
             UserImages.ImageURL.label("image_url"),
         )
@@ -72,9 +92,31 @@ def get_match_suggestions(
         .filter(
             User.ID != current_user.ID,
             User.IsActive == True,
-            UserGamesSkill.GameId == game_id,
+            ~User.ID.in_(swiped_subq),
         )
     )
+
+    # 3) Armar condiciones dinámicas por cada juego propio
+    conds = []
+    for (g_id, my_ranked, my_local_rank_id) in my_skills:
+        if my_ranked and my_local_rank_id is not None:
+            # Ambos ranked y dentro de ±3
+            conds.append(
+                and_(
+                    UserGamesSkill.GameId == g_id,
+                    UserGamesSkill.IsRanked == True,
+                    UserGamesSkill.Game_rank_local_id.between(
+                        int(my_local_rank_id) - 3, int(my_local_rank_id) + 3
+                    ),
+                )
+            )
+        else:
+            # Al menos uno no ranked: basta con compartir el juego
+            conds.append(UserGamesSkill.GameId == g_id)
+
+    q = q.filter(or_(*conds))
+
+    # 4) Filtros opcionales
     if server is not None:
         q = q.filter(User.Server == server)
     if is_ranked is not None:
@@ -82,6 +124,7 @@ def get_match_suggestions(
 
     rows = q.offset(skip).limit(limit).all()
 
+    # 5) Armar respuesta
     out: List[Suggestion] = []
     for user, skill, game, image_url in rows:
         out.append(
@@ -93,7 +136,7 @@ def get_match_suggestions(
                 bio=user.Bio,
                 game=game.GameName,
                 skill=skill.SkillLevel,
-                isRanked=skill.IsRanked,
+                isRanked=bool(skill.IsRanked),
             )
         )
     return out
