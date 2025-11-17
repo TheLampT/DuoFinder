@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from '@/styles/pages/messages.module.css';
+import Image from 'next/image';
 
 interface UserProfile {
   id: string;
@@ -300,7 +301,13 @@ const MessagesPage = () => {
       {/* Matches sidebar - conditionally rendered on mobile */}
       <div className={`${styles.matchesSidebar} ${showSidebar ? styles.active : ''}`}>
           <div className={styles.sidebarHeader}>
-            <img src="/favicon.ico" alt="DuoFinder" className={styles.logo} />
+            <Image 
+              src="/favicon.ico" 
+              alt="DuoFinder" 
+              width={40}
+              height={40}
+              className={styles.logo}
+            />
             <span className={styles.brandText}>Mensajes</span>
           <div className={styles.searchContainer}>
             <input
@@ -320,9 +327,12 @@ const MessagesPage = () => {
               onClick={() => handleSelectMatch(match)}
             >
               <div className={styles.matchAvatar}>
-                <img
+                <Image
                   src={match.user.avatar}
                   alt={match.user.name}
+                  width={50}
+                  height={50}
+                  className={styles.avatarImage}
                 />
                 {match.user.onlineStatus && (
                   <div className={styles.onlineIndicator}></div>
@@ -369,9 +379,12 @@ const MessagesPage = () => {
                 onClick={() => setShowProfile(!showProfile)}
               >
                 <div className={styles.chatAvatar}>
-                  <img
+                  <Image
                     src={selectedMatch.user.avatar}
                     alt={selectedMatch.user.name}
+                    width={50}
+                    height={50}
+                    className={styles.avatarImage}
                   />
                   {selectedMatch.user.onlineStatus && (
                     <div className={styles.onlineIndicator}></div>
@@ -399,9 +412,12 @@ const MessagesPage = () => {
               <div className={styles.profileView}>
                 <div className={styles.profileHeader}>
                   <div className={styles.profileAvatar}>
-                    <img
+                    <Image
                       src={selectedMatch.user.avatar}
                       alt={selectedMatch.user.name}
+                      width={80}
+                      height={80}
+                      className={styles.avatarImage}
                     />
                     {selectedMatch.user.onlineStatus && (
                       <div className={styles.onlineIndicator}></div>
@@ -442,7 +458,7 @@ const MessagesPage = () => {
                   {messages.map(message => (
                     <div
                       key={message.id}
-                      className={`${styles.message} ${message.senderId === 'yo' ? styles.sent : styles.received}`}
+                      className={`${styles.message} ${message.senderId === 'me' ? styles.sent : styles.received}`}
                     >
                       <div className={styles.messageContent}>
                         <p>{message.text}</p>

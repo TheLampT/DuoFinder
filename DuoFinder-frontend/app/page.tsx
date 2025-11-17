@@ -3,6 +3,7 @@
 import Link from "next/link";
 import styles from "../styles/pages/page.module.css";
 import { useState, useEffect } from "react";
+import Image from 'next/image';
 
 const PHONES: string[] = [
   "https://picsum.photos/id/1062/400/800",
@@ -48,7 +49,13 @@ export default function Landing() {
       {/* NAVBAR simple */}
       <nav className={styles.nav}>
         <div className={styles.brand}>
-          <img src="/favicon.ico" alt="DuoFinder" className={styles.logo} />
+          <Image 
+            src="/favicon.ico" 
+            alt="DuoFinder" 
+            width={40}  // adjust as needed
+            height={40} // adjust as needed
+            className={styles.logo}
+          />
           <span className={styles.brandText}>DuoFinder</span>
         </div>
         

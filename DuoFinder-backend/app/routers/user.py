@@ -33,8 +33,7 @@ class GameSkillUpdate(BaseModel):
     game_name: Optional[str] = None
     skill_level: Optional[str] = None
     is_ranked: Optional[bool] = None
-    # Nombre canónico en snake_case para el API:
-    game_rank_local_id: Optional[int] = Field(default=None, alias="Game_rank_local_id")
+    game_rank_local_id: Optional[int] = Field(default=None, alias="game_rank_local_id")
     rank_name: Optional[str] = None
 
     class Config:
@@ -50,6 +49,8 @@ class UserProfile(BaseModel):
     discord: Optional[str] = None
     tracker: Optional[str] = None
     birthdate: Optional[date] = None
+    age_min: Optional[int] = Field(default=None, ge=18, le=100)
+    age_max: Optional[int] = Field(default=None, ge=18, le=100)
     games: Optional[List[GameSkillUpdate]] = None
 
 class UserProfileOut(BaseModel):
@@ -60,6 +61,8 @@ class UserProfileOut(BaseModel):
     discord: Optional[str] = None
     tracker: Optional[str] = None
     age: int
+    age_min: Optional[int] = None
+    age_max: Optional[int] = None
     games: List[GameSkillUpdate] = []
 
 
@@ -116,6 +119,8 @@ def get_my_profile(
         discord=user.Discord,
         tracker=user.Tracker,
         age=calculate_age(user.BirthDate),
+        age_min=user.AgeMin,
+        age_max=user.AgeMax,
         games=games_payload,
     )
 
@@ -141,6 +146,15 @@ def update_profile(
         current_user.Tracker = profile.tracker
     if profile.birthdate is not None:
         current_user.BirthDate = profile.birthdate
+    if profile.age_min is not None:
+        current_user.AgeMin = profile.age_min
+    if profile.age_max is not None:
+        current_user.AgeMax = profile.age_max
+
+    # Validación de consistencia si ambos vienen
+    if (profile.age_min is not None) and (profile.age_max is not None):
+        if profile.age_min > profile.age_max:
+            raise HTTPException(status_code=400, detail="age_min no puede ser mayor que age_max")
 
     if profile.games is not None:
         # 1) Borrar skills previas del usuario (sin sincronizar sesión para evitar flushes intermedios)
@@ -216,6 +230,8 @@ def update_profile(
             "discord": current_user.Discord,
             "tracker": current_user.Tracker,
             "birthdate": str(current_user.BirthDate),
+            "age_min": current_user.AgeMin,
+            "age_max": current_user.AgeMax,
         }
     }
 
@@ -278,5 +294,7 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
         discord=user.Discord,
         tracker=user.Tracker,
         age=calculate_age(user.BirthDate),
+        age_min=user.AgeMin,
+        age_max=user.AgeMax,
         games=games_payload,
     )
