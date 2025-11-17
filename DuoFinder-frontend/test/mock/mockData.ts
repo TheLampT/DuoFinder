@@ -5,7 +5,7 @@ export interface GameSkill {
 }
 
 export interface Profile {
-  id: string;
+  id: number;
   username: string;
   age: number;
   bio: string;

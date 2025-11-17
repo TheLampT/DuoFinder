@@ -1,5 +1,6 @@
+// components/ProfileDetail.tsx
 import React from 'react';
-import { Profile } from '@/test/mock/mockData';
+import { Profile } from '@/lib/types';
 import styles from '@/styles/components/ProfileDetail.module.css';
 
 interface ProfileDetailProps {
@@ -10,78 +11,83 @@ interface ProfileDetailProps {
   onDislike: () => void;
 }
 
-const ProfileDetail: React.FC<ProfileDetailProps> = ({ 
-  profile, 
-  isOpen, 
-  onClose, 
-  onLike, 
-  onDislike 
+const ProfileDetail: React.FC<ProfileDetailProps> = ({
+  profile,
+  isOpen,
+  onClose,
+  onLike,
+  onDislike,
 }) => {
   if (!isOpen) return null;
 
-  const handleLike = () => {
-    onLike();
-    onClose();
-  };
-
-  const handleDislike = () => {
-    onDislike();
-    onClose();
-  };
-
-  // Render ranked or casual icon
-  const renderRankedIcon = (isRanked: boolean) => {
-    return isRanked ? (
-      <span className={styles.rankedIcon} title="Ranked Competitive">🏆</span>
-    ) : (
-      <span className={styles.casualIcon} title="Casual Play">🎮</span>
-    );
-  };
-
   return (
-    <div className={styles['modal-overlay']} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <button className={styles.closeButton} onClick={onClose} aria-label="Close">
-          ✕
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <button className={styles.closeButton} onClick={onClose}>
+          ×
         </button>
         
         <div className={styles.profileHeader}>
-          <div 
+          <img
+            src={profile.image}
+            alt={profile.name}
             className={styles.profileImage}
-            style={{ backgroundImage: `url(${profile.image})` }}
           />
-          <div className={styles.profileBasicInfo}>
-            <h2>{profile.username}, {profile.age}</h2>
+          <div className={styles.profileInfo}>
+            <h2 className={styles.profileName}>{profile.name}</h2>
+            <p className={styles.profileAge}>{profile.age} años</p>
+            {profile.server && (
+              <p className={styles.profileServer}>Servidor: {profile.server}</p>
+            )}
           </div>
         </div>
-        
-        <div className={styles.detailsSection}>
-          <h3>About Me</h3>
-          <p>{profile.bio}</p>
-        </div>
-        
-        <div className={styles.interestsSection}>
-          <h3>Gaming Skills</h3>
-          <div className={styles.gameSkillsGrid}>
-            {profile.gameSkill.map((gameSkill, index) => (
-              <div key={index} className={styles.gameSkillItem}>
-                <div className={styles.gameInfo}>
-                  <div className={styles.gameHeader}>
-                    <span className={styles.gameName}>{gameSkill.game}</span>
-                    {renderRankedIcon(gameSkill.isRanked)}
-                  </div>
-                  <div className={styles.skillLevel}>{gameSkill.skill}</div>
-                </div>
-              </div>
-            ))}
+
+        <div className={styles.profileDetails}>
+          {profile.bio && (
+            <div className={styles.detailSection}>
+              <h3>Bio</h3>
+              <p>{profile.bio}</p>
+            </div>
+          )}
+
+          <div className={styles.detailSection}>
+            <h3>Juego</h3>
+            <p>{profile.game}</p>
           </div>
-        </div>        
+
+          <div className={styles.detailSection}>
+            <h3>Nivel de habilidad</h3>
+            <p>{profile.skillLevel}</p>
+            {profile.isRanked && <span className={styles.rankedBadge}>Ranked</span>}
+          </div>
+
+          {profile.discord && (
+            <div className={styles.detailSection}>
+              <h3>Discord</h3>
+              <p>{profile.discord}</p>
+            </div>
+          )}
+
+          {profile.tracker && (
+            <div className={styles.detailSection}>
+              <h3>Tracker</h3>
+              <p>{profile.tracker}</p>
+            </div>
+          )}
+        </div>
+
         <div className={styles.actionButtons}>
-          <button className={styles.dislikeButton} onClick={handleDislike}>
-            ✖️
+          <button
+            className={`${styles.actionButton} ${styles.dislikeButton}`}
+            onClick={onDislike}
+          >
+            ✕
           </button>
-          <button className={styles.likeButton} onClick={handleLike}>
-            ❤️
+          <button
+            className={`${styles.actionButton} ${styles.likeButton}`}
+            onClick={onLike}
+          >
+            ♥
           </button>
         </div>
       </div>

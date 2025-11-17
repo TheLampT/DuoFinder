@@ -93,6 +93,8 @@ export interface UserProfile {
   discord?: string;
   tracker?: string;
   birthdate?: string;
+  age_min?: number;
+  age_max?: number;
   games?: UserGame[];
 }
 
@@ -113,6 +115,8 @@ export interface UpdateProfileRequest {
   discord?: string;
   tracker?: string;
   birthdate?: string;
+  age_min?: number;
+  age_max?: number;
   games?: Array<{
     game_id?: number;
     skill_level?: string;

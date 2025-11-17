@@ -3,48 +3,129 @@
 import styles from "../../styles/pages/preferences.module.css";
 import { useState, useEffect } from "react";
 import Image from 'next/image';
+import { profileService } from '../../lib/auth';
 
 export default function Preferences() {
   const [notifications, setNotifications] = useState<boolean>(true);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
   const [ageRange, setAgeRange] = useState<[number, number]>([18, 40]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [hasChanges, setHasChanges] = useState<boolean>(false);
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
   useEffect(() => {
-    // Load saved preferences
-    const savedNotifications = localStorage.getItem('notifications');
-    const savedAgeRange = localStorage.getItem('ageRange');
-    
-    if (savedNotifications) setNotifications(savedNotifications === 'true');
-    if (savedAgeRange) setAgeRange(JSON.parse(savedAgeRange));
-    
-    // Get current theme from document (avoids flash of wrong theme)
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    setIsDarkMode(currentTheme === 'dark');
+    setIsMounted(true);
+    loadPreferences();
   }, []);
 
-  // Add this useEffect to update CSS variables for the slider track
+  const loadPreferences = async () => {
+    try {
+      setIsLoading(true);
+      const profile = await profileService.getProfile();
+      
+      // Check if profile has age_min and age_max with proper null checks
+      if (profile.age_min != null && profile.age_max != null) {
+        const newAgeRange: [number, number] = [Number(profile.age_min), Number(profile.age_max)];
+        setAgeRange(newAgeRange);
+      }
+      // If age_min or age_max are null/undefined, keep the default [18, 40]
+      
+    } catch (error) {
+      console.error('Failed to load preferences:', error);
+      // Fallback to localStorage if API fails
+      const savedAgeRange = localStorage.getItem('ageRange');
+      if (savedAgeRange) {
+        try {
+          const parsed = JSON.parse(savedAgeRange);
+          if (Array.isArray(parsed) && parsed.length === 2 && 
+              parsed[0] != null && parsed[1] != null) {
+            const tupleAgeRange: [number, number] = [Number(parsed[0]), Number(parsed[1])];
+            setAgeRange(tupleAgeRange);
+          }
+        } catch (e) {
+          console.error('Failed to parse saved age range:', e);
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Update CSS variables for the slider track with null checks
   useEffect(() => {
-    document.documentElement.style.setProperty('--min', ageRange[0].toString());
-    document.documentElement.style.setProperty('--max', ageRange[1].toString());
+    if (ageRange && ageRange[0] != null && ageRange[1] != null) {
+      document.documentElement.style.setProperty('--min', ageRange[0].toString());
+      document.documentElement.style.setProperty('--max', ageRange[1].toString());
+    }
   }, [ageRange]);
+
+  const savePreferences = async () => {
+    if (!ageRange) return;
+    
+    try {
+      setIsSaving(true);
+      // Update age range via API
+      await profileService.updateProfile({
+        age_min: ageRange[0],
+        age_max: ageRange[1]
+      });
+      
+      // Save other preferences to localStorage
+      localStorage.setItem('notifications', notifications.toString());
+      localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+      localStorage.setItem('ageRange', JSON.stringify(ageRange));
+      
+      setHasChanges(false);
+      console.log('Preferences saved successfully');
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+      // Fallback to localStorage only if API fails
+      localStorage.setItem('ageRange', JSON.stringify(ageRange));
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleThemeChange = (isDark: boolean): void => {
     setIsDarkMode(isDark);
     const theme = isDark ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
+    setHasChanges(true);
   };
 
   const handleNotificationsChange = (enabled: boolean): void => {
     setNotifications(enabled);
-    localStorage.setItem('notifications', enabled.toString());
+    setHasChanges(true);
   };
 
   const handleAgeRangeChange = (min: number, max: number): void => {
     const newAgeRange: [number, number] = [min, max];
     setAgeRange(newAgeRange);
-    localStorage.setItem('ageRange', JSON.stringify(newAgeRange));
+    setHasChanges(true);
   };
+
+  const handleSaveClick = async () => {
+    await savePreferences();
+  };
+
+  // Don't render anything until mounted (SSR compatibility)
+  if (!isMounted || isLoading) {
+    return (
+      <main className={styles.wrapper}>
+        <div className={styles.container}>
+          <div className={styles.preferencesCard}>
+            <p>Loading preferences...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Safe age range values with fallbacks
+  const safeAgeRange = ageRange || [18, 40];
+  const minAge = safeAgeRange[0] != null ? safeAgeRange[0] : 18;
+  const maxAge = safeAgeRange[1] != null ? safeAgeRange[1] : 40;
 
   return (
     <main className={styles.wrapper}>
@@ -54,17 +135,18 @@ export default function Preferences() {
           <Image 
             src="/favicon.ico" 
             alt="DuoFinder" 
-            width={40}  // adjust as needed
-            height={40} // adjust as needed
+            width={40}
+            height={40}
             className={styles.logo}
           />
           <span className={styles.brandText}>Preferencias</span>
         </div>
-        <div style={{width: "100px"}}></div> {/* For spacing */}
+        <div style={{width: "100px"}}></div>
       </nav>
 
       <div className={styles.container}>
         <div className={styles.preferencesCard}>
+          {/* Save indicator */}
           <h2 className={styles.sectionTitle}>Apariencia</h2>
           
           <div className={styles.optionGroup}>
@@ -108,7 +190,7 @@ export default function Preferences() {
               <div className={styles.ageRangeContainer}>
                 <span className={styles.optionLabel}>Rango de edad</span>
                 <div className={styles.ageRangeValues}>
-                  {ageRange[0]} - {ageRange[1]} años
+                  {minAge} - {maxAge} años
                 </div>
               </div>
               <div className={styles.ageSliderContainer}>
@@ -117,22 +199,38 @@ export default function Preferences() {
                     type="range"
                     min="18"
                     max="100"
-                    value={ageRange[0]}
-                    onChange={(e) => handleAgeRangeChange(Number(e.target.value), ageRange[1])}
+                    value={minAge}
+                    onChange={(e) => handleAgeRangeChange(Number(e.target.value), maxAge)}
                     className={styles.slider}
                   />
                   <input
                     type="range"
                     min="18"
                     max="100"
-                    value={ageRange[1]}
-                    onChange={(e) => handleAgeRangeChange(ageRange[0], Number(e.target.value))}
+                    value={maxAge}
+                    onChange={(e) => handleAgeRangeChange(minAge, Number(e.target.value))}
                     className={styles.slider}
                   />
                 </div>
               </div>
             </div>
-          </div>  
+          </div>
+
+          {/* Save button at the bottom */}
+          
+          {hasChanges && (<div className={styles.saveSection}>
+              <button 
+                onClick={handleSaveClick}
+                disabled={!hasChanges || isSaving}
+                className={`${styles.saveButton} ${!hasChanges ? styles.saveButtonDisabled : ''}`}
+              >
+                {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+              {!hasChanges && (
+                <span className={styles.savedText}>Todos los cambios están guardados</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </main>
