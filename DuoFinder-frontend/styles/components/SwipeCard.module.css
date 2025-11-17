@@ -1,3 +1,32 @@
+/* Theme variables for SwipeCard */
+:root[data-theme="dark"] {
+  --card-bg: #121826;
+  --card-text: #e8eaf0;
+  --card-muted: #a7b0c0;
+  --card-outline: #2a3445;
+  --tag-bg: #2a3445;
+  --tag-text: #a7b0c0;
+  --more-tag-bg: #1a2438;
+  --more-tag-text: #8894a8;
+  --info-button-bg: rgba(255, 255, 255, 0.15);
+  --info-button-hover: rgba(255, 255, 255, 0.25);
+  --info-button-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+:root[data-theme="light"] {
+  --card-bg: #ffffff;
+  --card-text: #1a1d21;
+  --card-muted: #6b7280;
+  --card-outline: #e5e7eb;
+  --tag-bg: #e0e7ff;
+  --tag-text: #4f46e5;
+  --more-tag-bg: #f1f5f9;
+  --more-tag-text: #64748b;
+  --info-button-bg: rgba(255, 255, 255, 0.9);
+  --info-button-hover: #ffffff;
+  --info-button-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
 .swipeCard {
   position: relative;
   width: 100%;

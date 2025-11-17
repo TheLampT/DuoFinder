@@ -1,3 +1,52 @@
+/* Theme variables for ProfileDetail */
+:root[data-theme="dark"] {
+  --modal-bg: #121826;
+  --modal-text: #e8eaf0;
+  --modal-muted: #a7b0c0;
+  --modal-outline: #2a3445;
+  --modal-overlay: rgba(0, 0, 0, 0.8);
+  --section-border: #2a3445;
+  --tag-bg: #2a3445;
+  --tag-text: #a7b0c0;
+  --close-button-bg: rgba(255, 255, 255, 0.1);
+  --close-button-hover: rgba(255, 255, 255, 0.2);
+  --gradient-overlay: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+  --feedback-bg: rgba(30, 35, 48, 0.95);
+  --feedback-border: rgba(255, 255, 255, 0.1);
+  --feedback-text: #e8eaf0;
+  --feedback-subtext: #a7b0c0;
+  --game-item-bg: #1a2438;
+  --game-item-border: #2a3445;
+  --game-name: #e8eaf0;
+  --skill-level: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --ranked-bg: rgba(212, 175, 55, 0.15);
+  --casual-bg: rgba(72, 187, 120, 0.15);
+}
+
+:root[data-theme="light"] {
+  --modal-bg: #ffffff;
+  --modal-text: #1a1d21;
+  --modal-muted: #6b7280;
+  --modal-outline: #e5e7eb;
+  --modal-overlay: rgba(0, 0, 0, 0.7);
+  --section-border: #e5e7eb;
+  --tag-bg: #e0e7ff;
+  --tag-text: #4f46e5;
+  --close-button-bg: rgba(0, 0, 0, 0.1);
+  --close-button-hover: rgba(0, 0, 0, 0.2);
+  --gradient-overlay: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+  --feedback-bg: rgba(255, 255, 255, 0.95);
+  --feedback-border: rgba(0, 0, 0, 0.1);
+  --feedback-text: #1f2937;
+  --feedback-subtext: #6b7280;
+  --game-item-bg: #f8f9fa;
+  --game-item-border: #e9ecef;
+  --game-name: #2d3748;
+  --skill-level: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --ranked-bg: rgba(212, 175, 55, 0.1);
+  --casual-bg: rgba(72, 187, 120, 0.1);
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;

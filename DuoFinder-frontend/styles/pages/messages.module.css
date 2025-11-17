@@ -1,3 +1,58 @@
+/* Theme variables for Messages page */
+:root[data-theme="dark"] {
+  --bg-primary: #0b0f14;
+  --bg-secondary: #121826;
+  --bg-tertiary: #1a2438;
+  --text-primary: #e8eaf0;
+  --text-secondary: #a7b0c0;
+  --text-tertiary: #8894a8;
+  --border-color: #2a3445;
+  --accent-primary: #8b5cf6;
+  --accent-secondary: #7c3aed;
+  --accent-success: #10b981;
+  --accent-danger: #ef4444;
+  --overlay-bg: rgba(0, 0, 0, 0.8);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+  --gradient-overlay: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+  --message-sent-bg: #8b5cf6;
+  --message-received-bg: #2a3445;
+  --online-indicator: #10b981;
+  --unread-badge: #8b5cf6;
+  --search-bg: #1a2438;
+  --search-border: #2a3445;
+  --game-tag-bg: #2a3445;
+  --game-tag-text: #a7b0c0;
+}
+
+:root[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-tertiary: #94a3b8;
+  --border-color: #e2e8f0;
+  --accent-primary: #8b5cf6;
+  --accent-secondary: #7c3aed;
+  --accent-success: #10b981;
+  --accent-danger: #ef4444;
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --gradient-overlay: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+  --message-sent-bg: #8b5cf6;
+  --message-received-bg: #ffffff;
+  --online-indicator: #10b981;
+  --unread-badge: #8b5cf6;
+  --search-bg: #f8fafc;
+  --search-border: #e2e8f0;
+  --game-tag-bg: #f1f5f9;
+  --game-tag-text: #475569;
+}
+
 .messagesContainer {
   display: flex;
   height: calc(100vh - var(--bottom-bar-height, 60px));
@@ -673,9 +728,4 @@
   font-weight: 900;
   letter-spacing: 0.2px;
   font-size: 20px;
-}
-
-.avatarImage {
-  border-radius: 50%;
-  object-fit: cover;
 }

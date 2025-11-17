@@ -78,7 +78,7 @@ app = FastAPI(title="DuoFinder API")
 origins = [
     "http://localhost:3000",  # Next.js dev server
     "http://localhost:3001",  # Alternative port
-    "https://duo-finder.vercel.app",  # Your production frontend (update this)
+    "https://duofinder-frontend.vercel.app",  # Your production frontend (update this)
     # Add any other domains you need
 ]
 

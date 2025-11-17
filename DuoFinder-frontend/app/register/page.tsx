@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
-import Image from 'next/image';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -64,10 +63,9 @@ export default function RegisterPage() {
       // Redirect to login page on success
       router.replace('/login');
       
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error('Registration error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'No se pudo crear la cuenta. Intentalo de nuevo.';
-      setError(errorMessage);
+      setError(err.message || 'No se pudo crear la cuenta. Intentalo de nuevo.');
     } finally {
       setSubmitting(false);
     }
@@ -78,12 +76,7 @@ export default function RegisterPage() {
       <div className={styles.card}>
         <section className={styles.left}>
           <div className={styles.logoRow}>
-            <Image 
-              src="/favicon.ico" 
-              alt="DuoFinder" 
-              width={40}
-              height={40}
-            />
+            <img src="/favicon.ico" alt="DuoFinder" />
             <span>DuoFinder</span>
           </div>
 
@@ -159,12 +152,7 @@ export default function RegisterPage() {
           aria-hidden
         >
           <div className={styles.brandMark}>
-            <Image 
-              src="/favicon.ico" 
-              alt="DuoFinder" 
-              width={40}  // adjust as needed
-              height={40} // adjust as needed
-            />
+            <img src="/favicon.ico" alt="" />
             <strong>DuoFinder</strong>
             <p>Sumate y empezá a matchear en minutos.</p>
           </div>

@@ -1,3 +1,24 @@
+/* Theme variables */
+:root[data-theme="dark"] {
+  --bg: #0b0f14;
+  --text: #e8eaf0;
+  --muted: #a7b0c0;
+  --card: #121826;
+  --outline: #2a3445;
+  --red: #e74a4a;     /* corazón del logo */
+  --purple: #2b1f5a;  /* gamepad del logo */
+}
+
+:root[data-theme="light"] {
+  --bg: #f0f2f5;
+  --text: #1a1d21;
+  --muted: #6b7280;
+  --card: #ffffff;
+  --outline: #e5e7eb;
+  --red: #e74a4a;     /* corazón del logo */
+  --purple: #2b1f5a;  /* gamepad del logo */
+}
+
 /* layout general */
 .wrapper{
   min-height:100svh;

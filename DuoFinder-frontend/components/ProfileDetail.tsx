@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Profile } from '@/test/mock/mockData';
 import styles from '@/styles/components/ProfileDetail.module.css';
 
@@ -17,6 +17,9 @@ const ProfileDetail: React.FC<ProfileDetailProps> = ({
   onLike, 
   onDislike 
 }) => {
+  const [showCopyFeedback, setShowCopyFeedback] = useState(false);
+  const [copiedUsername, setCopiedUsername] = useState('');
+
   if (!isOpen) return null;
 
   const handleLike = () => {
@@ -38,8 +41,39 @@ const ProfileDetail: React.FC<ProfileDetailProps> = ({
     );
   };
 
+  // Copy Discord username to clipboard with nice feedback
+  const copyDiscordToClipboard = async () => {
+    if (profile.discord) {
+      try {
+        await navigator.clipboard.writeText(profile.discord);
+        setCopiedUsername(profile.discord);
+        setShowCopyFeedback(true);
+        
+        // Auto-hide after 2 seconds
+        setTimeout(() => {
+          setShowCopyFeedback(false);
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy: ', err);
+      }
+    }
+  };
+
   return (
     <div className={styles['modal-overlay']} onClick={onClose}>
+      {/* Copy Feedback Modal */}
+      {showCopyFeedback && (
+        <div className={styles.copyFeedback}>
+          <div className={styles.feedbackContent}>
+            <div className={styles.feedbackIcon}>✅</div>
+            <div className={styles.feedbackText}>
+              <span className={styles.feedbackMain}>Copied to clipboard!</span>
+              <span className={styles.feedbackSub}>{copiedUsername}</span>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <button className={styles.closeButton} onClick={onClose} aria-label="Close">
           ✕

@@ -2,197 +2,11 @@
 /* ===== DuoFinder – globals.css (oscuro a pantalla completa) ===== */
 
 :root{
-  --bg:#f8fafc;
-  --text:#1c1635;
-  --muted: #6b7280;
-  --card: #ffffff;
-  --outline: #e5e7eb;
-  --red: #e74a4a;
-  --purple: #2b1f5a;
-  --accent: #e74a4a;
-
-  /* Light theme (default) */
-  --bg-primary: #f8fafc;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f1f5f9;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-tertiary: #94a3b8;
-  --border-color: #e2e8f0;
-  --accent-primary: #e74a4a;
-  --accent-secondary: #d43c3c;
-  --success-bg: #dcfce7;
-  --success-text: #166534;
-  --success-border: #bbf7d0;
-  --error-bg: #fee2e2;
-  --error-text: #991b1b;
-  --error-border: #fecaca;
-  --overlay-bg: linear-gradient(to bottom, rgba(0,0,0,.1), rgba(0,0,0,.4));
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 22px 60px rgba(0,0,0,.1);
-  --input-bg: #ffffff;
-  --input-border: #e2e8f0;
-  --input-focus-border: #93c5fd;
-  --input-focus-shadow: 0 0 0 3px rgba(147,197,253,.25);
-  --input-focus-bg: #f8fafc;
-  --chip-bg: #f1f5f9;
-  --chip-selected-bg: rgba(231,74,74,.15);
-  --btn-outline-bg: #f1f5f9;
-  --preview-bg: #ffffff;
-  --badge-bg: #ffffffaa;
-  --badge-primary-bg: rgba(231,74,74,.15);
-  --bottom-bar-bg: #ffffff;
-  --bottom-bar-border: #e5e7eb;
-  --bottom-bar-text: #6b7280;
-  --bottom-bar-text-active: #1a1d21;
-  --bottom-bar-icon: #6b7280;
-  --bottom-bar-icon-active: #e74a4a;
-  --bottom-bar-hover: #e74a4a;
-  --modal-bg: #ffffff;
-  --modal-text: #1a1d21;
-  --modal-muted: #6b7280;
-  --modal-outline: #e5e7eb;
-  --modal-overlay: rgba(0, 0, 0, 0.7);
-  --section-border: #e5e7eb;
-  --tag-bg: #e0e7ff;
-  --tag-text: #4f46e5;
-  --close-button-bg: rgba(0, 0, 0, 0.1);
-  --close-button-hover: rgba(0, 0, 0, 0.2);
-  --gradient-overlay: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
-  --feedback-bg: rgba(255, 255, 255, 0.95);
-  --feedback-border: rgba(0, 0, 0, 0.1);
-  --feedback-text: #1f2937;
-  --feedback-subtext: #6b7280;
-  --game-item-bg: #f8f9fa;
-  --game-item-border: #e9ecef;
-  --game-name: #2d3748;
-  --skill-level: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --ranked-bg: rgba(212, 175, 55, 0.1);
-  --casual-bg: rgba(72, 187, 120, 0.1);
-  --accent-success: #10b981;
-  --accent-danger: #ef4444;
-  --overlay-bg: rgba(0, 0, 0, 0.7);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-  --gradient-overlay: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
-  --message-sent-bg: #8b5cf6;
-  --message-received-bg: #ffffff;
-  --online-indicator: #10b981;
-  --unread-badge: #8b5cf6;
-  --search-bg: #f8fafc;
-  --search-border: #e2e8f0;
-  --game-tag-bg: #f1f5f9;
-  --game-tag-text: #475569;
-  --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --card-bg: #ffffff;
-  --card-text: #1a1d21;
-  --card-muted: #6b7280;
-  --card-outline: #e5e7eb;
-  --tag-bg: #e0e7ff;
-  --tag-text: #4f46e5;
-  --more-tag-bg: #f1f5f9;
-  --more-tag-text: #64748b;
-  --info-button-bg: rgba(255, 255, 255, 0.9);
-  --info-button-hover: #ffffff;
-  --info-button-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="dark"] {
-  --bg: #0b0f14;
-  --text: #e8eaf0;
-  --muted: #a7b0c0;
-  --card: #121826;
-  --outline: #2a3445;
-  --red: #e74a4a;
-  --purple: #2b1f5a;
-  --accent: #e74a4a;
-  --bg-primary: #0b0f14;
-  --bg-secondary: #121826;
-  --bg-tertiary: #1a2438;
-  --text-primary: #e8eaf0;
-  --text-secondary: #a7b0c0;
-  --text-tertiary: #8894a8;
-  --border-color: #2a3445;
-  --accent-primary: #e74a4a;
-  --accent-secondary: #d43c3c;
-  --success-bg: #052e1a;
-  --success-text: #8ef1c3;
-  --success-border: #14532d;
-  --error-bg: #3a0c0c;
-  --error-text: #fecaca;
-  --error-border: #7f1d1d;
-  --overlay-bg: linear-gradient(to bottom, rgba(0,0,0,.35), rgba(11,15,20,.8));
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 22px 60px rgba(0,0,0,.45);
-  --input-bg: #0d1420;
-  --input-border: #1b2433;
-  --input-focus-border: #4b5b77;
-  --input-focus-shadow: 0 0 0 3px rgba(75,91,119,.25);
-  --input-focus-bg: #0f1826;
-  --chip-bg: #0d1420;
-  --chip-selected-bg: rgba(231,74,74,.22);
-  --btn-outline-bg: #121a28;
-  --preview-bg: #0b1220;
-  --badge-bg: #0b1220aa;
-  --badge-primary-bg: rgba(231,74,74,.25);
-  --bottom-bar-bg: #121826;
-  --bottom-bar-border: #2a3445;
-  --bottom-bar-text: #a7b0c0;
-  --bottom-bar-text-active: #e8eaf0;
-  --bottom-bar-icon: #a7b0c0;
-  --bottom-bar-icon-active: #e74a4a;
-  --bottom-bar-hover: #e74a4a;
-  --modal-bg: #121826;
-  --modal-text: #e8eaf0;
-  --modal-muted: #a7b0c0;
-  --modal-outline: #2a3445;
-  --modal-overlay: rgba(0, 0, 0, 0.8);
-  --section-border: #2a3445;
-  --tag-bg: #2a3445;
-  --tag-text: #a7b0c0;
-  --close-button-bg: rgba(255, 255, 255, 0.1);
-  --close-button-hover: rgba(255, 255, 255, 0.2);
-  --gradient-overlay: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
-  --feedback-bg: rgba(30, 35, 48, 0.95);
-  --feedback-border: rgba(255, 255, 255, 0.1);
-  --feedback-text: #e8eaf0;
-  --feedback-subtext: #a7b0c0;
-  --game-item-bg: #1a2438;
-  --game-item-border: #2a3445;
-  --game-name: #e8eaf0;
-  --skill-level: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --ranked-bg: rgba(212, 175, 55, 0.15);
-  --casual-bg: rgba(72, 187, 120, 0.15);
-  --accent-success: #10b981;
-  --accent-danger: #ef4444;
-  --overlay-bg: rgba(0, 0, 0, 0.8);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
-  --gradient-overlay: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
-  --message-sent-bg: #8b5cf6;
-  --message-received-bg: #2a3445;
-  --online-indicator: #10b981;
-  --unread-badge: #8b5cf6;
-  --search-bg: #1a2438;
-  --search-border: #2a3445;
-  --game-tag-bg: #2a3445;
-  --game-tag-text: #a7b0c0;
-  --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --card-bg: #121826;
-  --card-text: #e8eaf0;
-  --card-muted: #a7b0c0;
-  --card-outline: #2a3445;
-  --tag-bg: #2a3445;
-  --tag-text: #a7b0c0;
-  --more-tag-bg: #1a2438;
-  --more-tag-text: #8894a8;
-  --info-button-bg: rgba(255, 255, 255, 0.15);
-  --info-button-hover: rgba(255, 255, 255, 0.25);
-  --info-button-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --bg:#0b0f14;
+  --text:#e8eaf0;
+  --muted:#a7b0c0;
+  --divider:#2a3445;
+  --accent:#e74a4a; /* rojo del logo */
 }
 
 *{
@@ -204,11 +18,8 @@
 /* fondo oscuro para TODA la pantalla, sin centrar nada desde body */
 html, body{
   height:100%;
-  width: 100%;
   max-width:100vw;
   overflow-x:hidden;
-  margin: 0;
-  padding: 0;
 }
 
 body{
@@ -263,10 +74,4 @@ header h1{
 .no-more-profiles h2{
   margin-bottom:10px;
   color: var(--muted);
-}
-
-:root {
-  /* Colors from your login/register pages */
-  
-  /* Add any other CSS variables you need globally */
 }
