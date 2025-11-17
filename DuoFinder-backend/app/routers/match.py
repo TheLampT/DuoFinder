@@ -88,7 +88,7 @@ def get_match_suggestions(
         )
         .join(UserGamesSkill, User.ID == UserGamesSkill.UserID)
         .join(Games, UserGamesSkill.GameId == Games.ID)
-        .outerjoin(UserImages, and_(UserImages.UserID == User.ID, UserImages.IsMain == True))
+        .outerjoin(UserImages, and_(UserImages.UserID == User.ID, UserImages.IsPrimary == True))
         .filter(
             User.ID != current_user.ID,
             User.IsActive == True,
