@@ -1,5 +1,5 @@
 import React, { useState, useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
-import { Profile, UserGame } from '@/lib/types';
+import { Profile } from '@/test/mock/mockData';
 import styles from '@/styles/components/SwipeCard.module.css';
 
 interface SwipeCardProps {
@@ -32,24 +32,24 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ profile, onSwip
   // Expose the triggerSwipe method to parent component
   useImperativeHandle(ref, () => ({
     triggerSwipe: (direction: 'left' | 'right') => {
-      // Animate swipe out for button clicks
-      if (cardRef.current) {
-        cardRef.current.style.transition = 'transform 0.5s ease, opacity 0.5s ease';
-        
-        // Use smaller distances that won't extend beyond the container
-        if (direction === 'right') {
-          cardRef.current.style.transform = 'translate(400px, 100px) rotate(30deg)';
-        } else {
-          cardRef.current.style.transform = 'translate(-400px, 100px) rotate(-30deg)';
-        }
-        cardRef.current.style.opacity = '0';
-        
-        // Call onSwipe after animation completes
-        setTimeout(() => {
-          onSwipe(direction);
-        }, 300);
+    // Animate swipe out for button clicks
+    if (cardRef.current) {
+      cardRef.current.style.transition = 'transform 0.5s ease, opacity 0.5s ease';
+      
+      // Use smaller distances that won't extend beyond the container
+      if (direction === 'right') {
+        cardRef.current.style.transform = 'translate(400px, 100px) rotate(30deg)';
+      } else {
+        cardRef.current.style.transform = 'translate(-400px, 100px) rotate(-30deg)';
       }
+      cardRef.current.style.opacity = '0';
+      
+      // Call onSwipe after animation completes
+      setTimeout(() => {
+        onSwipe(direction);
+      }, 300);
     }
+  }
   }));
 
   // Handle drag start
@@ -169,33 +169,17 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ profile, onSwip
         />
         
         <div className={styles.profileInfo}>
-          <h2>{profile.username || profile.name}, {profile.age}</h2>
+          <h2>{profile.username}, {profile.age}</h2>
           <p>{profile.bio}</p>
           
-          <div className={styles.gameInfo}>
-            <span className={styles.gameTag}>{profile.game}</span>
-            <span className={styles.skillLevel}>{profile.skillLevel}</span>
-            {profile.isRanked && (
-              <span className={styles.rankedBadge}>Ranked</span>
+          <div className={styles.interests}>
+            {profile.gameSkill.slice(0, 3).map((gameSkill, index) => (
+              <span key={index} className={styles.interestTag}>{gameSkill.game}</span>
+            ))}
+            {profile.gameSkill.length > 3 && (
+              <span className={styles.moreInterests}>+{profile.gameSkill.length - 3} more</span>
             )}
           </div>
-
-          {/* Si quieres mostrar múltiples juegos (opcional) */}
-          {profile.games && profile.games.length > 0 && (
-            <div className={styles.additionalGames}>
-              <p>Otros juegos:</p>
-              <div className={styles.gameTags}>
-                {profile.games.slice(0, 3).map((game: UserGame, index: number) => (
-                  <span key={game.game_id || index} className={styles.gameTag}>
-                    {game.game_name}
-                  </span>
-                ))}
-                {profile.games.length > 3 && (
-                  <span className={styles.moreGames}>+{profile.games.length - 3}</span>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
