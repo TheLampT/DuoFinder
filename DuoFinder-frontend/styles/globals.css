@@ -7,8 +7,13 @@
   --outline: #2a3445;
   --red: #e74a4a;
   --purple: #2b1f5a;
+  --accent: #e74a4a;
+  --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   
-  /* Bottom bar - Light theme (default) */
+  /* Card colors */
+  --card: #121826;
+  
+  /* Bottom bar */
   --bottom-bar-bg: #ffffff;
   --bottom-bar-border: #e5e7eb;
   --bottom-bar-text: #6b7280;
@@ -20,27 +25,51 @@
   /* Profile page */
   --bg-primary: #ffffff;
   --bg-secondary: #f8f9fa;
+  --bg-tertiary: #f1f5f9;
   --text-primary: #111827;
   --text-secondary: #6b7280;
+  --text-tertiary: #94a3b8;
   --border-color: #e5e7eb;
   
   /* Modal/Profile Detail */
   --modal-bg: #ffffff;
   --modal-text: #111827;
   
-  /* Cards */
-  --card-bg: #ffffff;
-  --card-text: #111827;
-  --card-border: #e5e7eb;
+  /* Messages page */
+  --accent-primary: #8b5cf6;
+  --accent-secondary: #7c3aed;
+  --accent-success: #10b981;
+  --accent-danger: #ef4444;
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --gradient-overlay: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+  --message-sent-bg: #8b5cf6;
+  --message-received-bg: #ffffff;
+  --online-indicator: #10b981;
+  --unread-badge: #8b5cf6;
+  --search-bg: #f8fafc;
+  --search-border: #e2e8f0;
+  --game-tag-bg: #f1f5f9;
+  --game-tag-text: #475569;
   
   /* Common styles */
   --shadow: 0 22px 60px rgba(0,0,0,.45);
   --border-radius: 22px;
+  --bottom-bar-height: 60px;
 }
 
 /* Dark theme */
 [data-theme="dark"] {
-  /* Bottom bar - Dark theme */
+  /* Core colors */
+  --bg: #0b0f14;
+  --text: #e8eaf0;
+  --muted: #a7b0c0;
+  --outline: #2a3445;
+  --card: #121826;
+  
+  /* Bottom bar */
   --bottom-bar-bg: #121826;
   --bottom-bar-border: #2a3445;
   --bottom-bar-text: #a7b0c0;
@@ -52,18 +81,50 @@
   /* Profile page */
   --bg-primary: #0b0f14;
   --bg-secondary: #121826;
+  --bg-tertiary: #1a2438;
   --text-primary: #e8eaf0;
   --text-secondary: #a7b0c0;
+  --text-tertiary: #8894a8;
   --border-color: #2a3445;
   
   /* Modal/Profile Detail */
   --modal-bg: #121826;
   --modal-text: #e8eaf0;
   
-  /* Cards */
-  --card-bg: #121826;
-  --card-text: #e8eaf0;
-  --card-border: #2a3445;
+  /* Messages page */
+  --accent-primary: #8b5cf6;
+  --accent-secondary: #7c3aed;
+  --accent-success: #10b981;
+  --accent-danger: #ef4444;
+  --overlay-bg: rgba(0, 0, 0, 0.8);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+  --gradient-overlay: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+  --message-sent-bg: #8b5cf6;
+  --message-received-bg: #2a3445;
+  --online-indicator: #10b981;
+  --unread-badge: #8b5cf6;
+  --search-bg: #1a2438;
+  --search-border: #2a3445;
+  --game-tag-bg: #2a3445;
+  --game-tag-text: #a7b0c0;
+}
+
+/* Light theme */
+[data-theme="light"] {
+  /* Core colors */
+  --bg: #f0f2f5;
+  --text: #1a1d21;
+  --muted: #6b7280;
+  --card: #ffffff;
+  --outline: #e5e7eb;
+  
+  /* Bottom bar - already set as default in :root */
+  
+  /* Profile page - already set as default in :root */
+  
+  /* Messages page - already set as default in :root */
 }
 
 * {
@@ -92,7 +153,7 @@ a {
 
 .main-content {
   min-height: 100vh;
-  padding-bottom: 70px; /* Space for the bottom bar */
+  padding-bottom: var(--bottom-bar-height);
 }
 
 /* Demo page styles */
