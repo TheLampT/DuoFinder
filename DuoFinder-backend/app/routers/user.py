@@ -39,6 +39,14 @@ class GameSkillUpdate(BaseModel):
     class Config:
         populate_by_name = True  # permite usar ya sea game_rank_local_id o Game_rank_local_id al parsear
 
+class UserImageOut(BaseModel):
+    id: int
+    url: str
+    is_primary: bool
+
+class ProfileImage(BaseModel):
+    url: str
+    is_primary: bool = False
 
 class UserProfile(BaseModel):
     username: Optional[str] = None
@@ -50,6 +58,7 @@ class UserProfile(BaseModel):
     tracker: Optional[str] = None
     birthdate: Optional[date] = None
     games: Optional[List[GameSkillUpdate]] = None
+    images: Optional[List[ProfileImage]] = None  # Lista de URLs de imágenes
 
 class UserProfileOut(BaseModel):
     username: str
@@ -60,6 +69,7 @@ class UserProfileOut(BaseModel):
     tracker: Optional[str] = None
     age: int
     games: List[GameSkillUpdate] = []
+    images: List[UserImageOut]
 
 
 # ===================== Endpoints =====================
@@ -106,6 +116,20 @@ def get_my_profile(
                 rank_name=row.rank_name,
             )
         )
+    image_rows = (
+        db.query(UserImages)
+        .filter(UserImages.UserID == current_user.ID)
+        .all()
+    )
+
+    images_payload: List[UserImageOut] = [
+        UserImageOut(
+            id=img.ID,
+            url=img.ImageURL,
+            is_primary=img.IsPrimary,
+        )
+        for img in image_rows
+    ]
 
     return UserProfileOut(
         username=user.Username,
@@ -116,6 +140,7 @@ def get_my_profile(
         tracker=user.Tracker,
         age=calculate_age(user.BirthDate),
         games=games_payload,
+        images=images_payload,
     )
 
 
@@ -202,8 +227,39 @@ def update_profile(
                 )
                 db.add(rec)
 
+    if profile.images is not None:
+        db.query(UserImages).filter(
+            UserImages.UserID == current_user.ID
+        ).delete(synchronize_session=False)
+
+        images_in = profile.images or []
+
+        # 2) Si ninguna viene marcada como primaria, marco la primera como primaria
+        has_primary = any(img.is_primary for img in images_in)
+
+        for idx, img in enumerate(images_in):
+            rec_img = UserImages(
+                UserID=current_user.ID,
+                ImageURL=img.url,
+                IsPrimary=img.is_primary if has_primary else (idx == 0)
+            )
+            db.add(rec_img)
+
     db.commit()
     db.refresh(current_user)
+
+    user_images = (
+        db.query(UserImages)
+        .filter(UserImages.UserID == current_user.ID)
+        .order_by(UserImages.ID)
+        .all()
+    )
+
+    primary_image_url = None
+    for ui in user_images:
+        if ui.IsPrimary:
+            primary_image_url = ui.ImageURL
+            break
 
     return {
         "message": "Perfil actualizado",
@@ -215,6 +271,8 @@ def update_profile(
             "discord": current_user.Discord,
             "tracker": current_user.Tracker,
             "birthdate": str(current_user.BirthDate),
+            "primary_image_url": primary_image_url,
+            "images": [{"id": ui.ID, "url": ui.ImageURL, "is_primary": ui.IsPrimary} for ui in user_images]
         }
     }
 
@@ -269,6 +327,21 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
             )
         )
 
+    image_rows = (
+        db.query(UserImages)
+        .filter(UserImages.UserID == user_id)
+        .all()
+    )
+
+    images_payload: List[UserImageOut] = [
+        UserImageOut(
+            id=img.ID,
+            url=img.ImageURL,
+            is_primary=img.IsPrimary,
+        )
+        for img in image_rows
+    ]
+
     return UserProfileOut(
         username=user.Username,
         email=user.Mail,
@@ -278,4 +351,6 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
         tracker=user.Tracker,
         age=calculate_age(user.BirthDate),
         games=games_payload,
+        images=images_payload
+        
     )
