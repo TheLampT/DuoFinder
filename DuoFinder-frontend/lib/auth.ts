@@ -103,8 +103,7 @@ export interface UserGame {
   game_name: string;
   skill_level: string;
   is_ranked: boolean;
-  game_rank_local_id?: number;
-  rank_name?: string;
+  game_rank_local_id: number;
 }
 
 export interface UpdateProfileRequest {

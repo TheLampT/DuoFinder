@@ -1,3 +1,13 @@
+:root{
+  /* Paleta DuoFinder (del logo) */
+  --bg:#0b0f14;
+  --text:#e8eaf0;
+  --muted:#a7b0c0;
+  --outline:#2a3445;
+  --red:#e74a4a;     /* primario */
+  --purple:#2b1f5a;  /* foco */
+}
+
 /* lienzo */
 .shell{
   min-height:100svh;

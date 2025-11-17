@@ -1,27 +1,29 @@
-from fastapi import APIRouter, Query, Depends, HTTPException
+from fastapi import APIRouter, Query, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
-from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import date, datetime
+from fastapi import HTTPException
 
-from app.db.connection import get_db
-from app.routers.auth import get_current_user
+from sqlalchemy import and_
 from app.models.user import User
 from app.models.user_images import UserImages
 from app.models.user_game_skill import UserGamesSkill
 from app.models.games import Games
+from app.routers.auth import get_current_user
+from app.db.connection import get_db
+
 from app.models.matches import Matches
 from app.models.chat import Chat
 
 router = APIRouter()
 
+# ==== Constantes (0 = dislike, 1 = like) ====
 DISLIKE = 0
 LIKE = 1
 
+# ==== Schemas ====
 
-# -------------------- Schemas --------------------
 class Suggestion(BaseModel):
     id: int
     username: str
@@ -35,99 +37,64 @@ class Suggestion(BaseModel):
     class Config:
         from_attributes = True
 
-
 class SwipeInput(BaseModel):
     target_user_id: int
     like: bool
-    game_id: Optional[int] = None  # opcional: si no viene, se infiere
+    game_id: int  # <-- NUEVO: juego en el que se hace el swipe
 
+# ==== Utilidades ====
 
-# -------------------- Util --------------------
 def calculate_age(birthdate: date) -> int:
     today = date.today()
     return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
 
+# ==== Endpoints ====
 
-# -------------------- Endpoints --------------------
 @router.get("/suggestions", response_model=List[Suggestion])
 def get_match_suggestions(
-    server: Optional[str] = Query(None),
-    is_ranked: Optional[bool] = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(5, ge=1, le=50),
+    game_id: int = Query(..., description="ID of the game to find matches for"),
+    server: Optional[str] = Query(None, description="Optional server filter"),
+    is_ranked: Optional[bool] = Query(None, description="Optional ranked filter"),
+    skip: int = Query(0, ge=0, description="Number of records to skip for pagination"),
+    limit: int = Query(5, ge=1, le=50, description="Number of records to return"),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db)
 ):
-    
-    my_id = current_user.ID
-
-    # Subquery con los usuarios a los que YA hice swipe (cualquier status)
-    swiped_subq = (
-        db.query(Matches.UserID2)
-          .filter(Matches.UserID1 == my_id)
-          .subquery()
-    )
-
-    # 1) Traer TODOS los juegos del usuario actual
-    my_skills = db.query(
-        UserGamesSkill.GameId,
-        UserGamesSkill.IsRanked,
-        UserGamesSkill.Game_rank_local_id
-    ).filter(UserGamesSkill.UserID == current_user.ID).all()
-
-    if not my_skills:
-        return []  # sin juegos, no hay sugerencias
-
-    # 2) Query base de candidatos
+    """
+    Sugerencias de usuarios para matchear según juego (y opcionalmente server / ranked).
+    Trae la imagen principal si existe.
+    """
     q = (
         db.query(
             User,
-            UserGamesSkill,    # <- skills del candidato
+            UserGamesSkill,
             Games,
-            UserImages.ImageURL.label("image_url"),
+            UserImages.ImageURL.label("image_url")
         )
         .join(UserGamesSkill, User.ID == UserGamesSkill.UserID)
         .join(Games, UserGamesSkill.GameId == Games.ID)
-        .outerjoin(UserImages, and_(UserImages.UserID == User.ID, UserImages.IsMain == True))
+        .outerjoin(
+            UserImages,
+            and_(UserImages.UserID == User.ID, UserImages.IsMain == True)
+        )
         .filter(
             User.ID != current_user.ID,
             User.IsActive == True,
-            ~User.ID.in_(swiped_subq),
+            UserGamesSkill.GameId == game_id
         )
     )
 
-    # 3) Armar condiciones dinámicas por cada juego propio
-    conds = []
-    for (g_id, my_ranked, my_local_rank_id) in my_skills:
-        if my_ranked and my_local_rank_id is not None:
-            # Ambos ranked y dentro de ±3
-            conds.append(
-                and_(
-                    UserGamesSkill.GameId == g_id,
-                    UserGamesSkill.IsRanked == True,
-                    UserGamesSkill.Game_rank_local_id.between(
-                        int(my_local_rank_id) - 3, int(my_local_rank_id) + 3
-                    ),
-                )
-            )
-        else:
-            # Al menos uno no ranked: basta con compartir el juego
-            conds.append(UserGamesSkill.GameId == g_id)
-
-    q = q.filter(or_(*conds))
-
-    # 4) Filtros opcionales
     if server is not None:
         q = q.filter(User.Server == server)
     if is_ranked is not None:
         q = q.filter(UserGamesSkill.IsRanked == is_ranked)
 
-    rows = q.offset(skip).limit(limit).all()
+    q = q.offset(skip).limit(limit)
+    rows = q.all()
 
-    # 5) Armar respuesta
-    out: List[Suggestion] = []
+    suggestions: List[Suggestion] = []
     for user, skill, game, image_url in rows:
-        out.append(
+        suggestions.append(
             Suggestion(
                 id=user.ID,
                 username=user.Username,
@@ -136,124 +103,140 @@ def get_match_suggestions(
                 bio=user.Bio,
                 game=game.GameName,
                 skill=skill.SkillLevel,
-                isRanked=bool(skill.IsRanked),
+                isRanked=skill.IsRanked
             )
         )
-    return out
 
+    return suggestions
 
 @router.post("/swipe")
 def swipe_user(
-    data: SwipeInput,
+    data: SwipeInput,                     # target_user_id: int, like: bool
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db)
 ):
-    me = current_user.ID
-    other = data.target_user_id
-    if me == other:
-        raise HTTPException(status_code=400, detail="No podés hacer swipe contra vos mismo")
+    """
+    Sin game_id en el body: inferimos el juego.
+    Reglas:
+      1) Si ambos comparten exactamente un GameID -> usar ese.
+      2) Si el usuario actual solo tiene un GameID -> usar ese.
+      3) Si hay 0 o >1 en común -> 400 (ambiguo): que el front mande game_id.
+    Matches.IsRanked = 1 solo si ambos IsRanked=1 en ese GameID.
+    """
+    my_id = current_user.ID
+    target_id = data.target_user_id
+    my_choice = LIKE if data.like else DISLIKE
 
-    # ---- pareja canónica ----
-    u_low, u_high = (me, other) if me < other else (other, me)
+    # --- Traer (GameID, IsRanked) de ambos usuarios como tuplas ---
+    my_skills = db.query(
+        UserGamesSkill.GameId, UserGamesSkill.IsRanked
+    ).filter(
+        UserGamesSkill.UserID == my_id
+    ).all()  # -> [(game_id, is_ranked), ...]
 
-    # ---- juego: usar el provisto o inferirlo ----
-    selected_game_id: Optional[int] = data.game_id
-    if selected_game_id is None:
-        my_skills = db.query(UserGamesSkill.GameId, UserGamesSkill.IsRanked).filter(UserGamesSkill.UserID == me).all()
-        ot_skills = db.query(UserGamesSkill.GameId, UserGamesSkill.IsRanked).filter(UserGamesSkill.UserID == other).all()
+    target_skills = db.query(
+        UserGamesSkill.GameId, UserGamesSkill.IsRanked
+    ).filter(
+        UserGamesSkill.UserID == target_id
+    ).all()
 
-        my_ids = {g for g, _ in my_skills}
-        ot_ids = {g for g, _ in ot_skills}
-        common = my_ids & ot_ids
+    # Conjuntos de IDs para inferencia
+    my_game_ids = {gid for (gid, _) in my_skills}
+    target_game_ids = {gid for (gid, _) in target_skills}
+    common = my_game_ids.intersection(target_game_ids)
 
-        if len(common) == 1:
-            selected_game_id = next(iter(common))
-        elif len(my_ids) == 1:
-            selected_game_id = next(iter(my_ids))
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="No se pudo inferir el juego (0 o >1 en común). Enviá game_id.",
-            )
-
-    # calcular IsRanked del match: ambos deben ser ranked en ese juego
-    my_ranked = db.query(UserGamesSkill.IsRanked).filter(
-        UserGamesSkill.UserID == me, UserGamesSkill.GameId == selected_game_id
-    ).scalar() or 0
-    ot_ranked = db.query(UserGamesSkill.IsRanked).filter(
-        UserGamesSkill.UserID == other, UserGamesSkill.GameId == selected_game_id
-    ).scalar() or 0
-    match_is_ranked = 1 if (my_ranked and ot_ranked) else 0
-
-    # ---- obtener/crear fila canónica ----
-    row = db.query(Matches).filter(Matches.UserID1 == u_low, Matches.UserID2 == u_high).first()
-    created_now = False
-    if not row:
-        row = Matches(
-            UserID1=u_low,
-            UserID2=u_high,
-            MatchDate=datetime.utcnow(),
-            IsRanked=match_is_ranked,
-            # GameID=selected_game_id,  # si tenés la columna
-        )
-        db.add(row)
-        try:
-            db.flush()
-            created_now = True
-        except IntegrityError:
-            # carrera: otra instancia insertó; recuperar
-            db.rollback()
-            row = db.query(Matches).filter(Matches.UserID1 == u_low, Matches.UserID2 == u_high).first()
-
-    # ---- actualizar like del lado correspondiente ----
-    if me == u_low:
-        row.LikedByUser1 = bool(data.like)
+    # --- Inferir GameID ---
+    if len(common) == 1:
+        selected_game_id = next(iter(common))
+    elif len(my_game_ids) == 1:
+        selected_game_id = next(iter(my_game_ids))
     else:
-        row.LikedByUser2 = bool(data.like)
+        raise HTTPException(
+            status_code=400,
+            detail="No se pudo inferir el juego del swipe (0 o >1 juegos en común). "
+                   "Envía game_id desde el frontend en estos casos."
+        )
 
-    # mantener metadatos
-    row.IsRanked = match_is_ranked
-    # if hasattr(row, "GameID"):
-    #     row.GameID = selected_game_id
+    # Diccionarios para consultar IsRanked por juego
+    my_ranked_by_game = {gid: ranked for (gid, ranked) in my_skills}
+    target_ranked_by_game = {gid: ranked for (gid, ranked) in target_skills}
 
-    # antes vs después para detectar "se armó el match"
-    was_match = bool(getattr(row, "LikedByUser1")) and bool(getattr(row, "LikedByUser2"))
+    # Si ambos tienen entrada y ambos IsRanked=1 -> vínculo ranked
+    my_r = my_ranked_by_game.get(selected_game_id, 0)
+    tg_r = target_ranked_by_game.get(selected_game_id, 0)
+    match_is_ranked = 1 if (my_r and tg_r) else 0
+
+    # --- Mi fila (A -> B) ---
+    my_row = db.query(Matches).filter(
+        and_(Matches.UserID1 == my_id, Matches.UserID2 == target_id)
+    ).first()
+
+    if my_row:
+        my_row.Status = my_choice
+        # Si tu tabla Matches tiene GameID, setéalo también:
+        # my_row.GameID = selected_game_id
+        my_row.IsRanked = match_is_ranked
+    else:
+        my_row = Matches(
+            UserID1=my_id,
+            UserID2=target_id,
+            Status=my_choice,
+            # GameID=selected_game_id,  # <-- si existe la columna
+            IsRanked=match_is_ranked,
+            MatchDate=datetime.utcnow() 
+        )
+        db.add(my_row)
+        db.flush()
+
+    # --- Fila inversa (B -> A) con like ---
+    reverse_row = db.query(Matches).filter(
+        and_(Matches.UserID1 == target_id, Matches.UserID2 == my_id, Matches.Status == LIKE)
+    ).first()
 
     db.commit()
-    db.refresh(row)
+    db.refresh(my_row)
 
-    is_match = bool(row.LikedByUser1) and bool(row.LikedByUser2)
+    # --- ¿Hay match lógico? ---
+    if my_row.Status == LIKE and reverse_row:
+        canonical_match_id = min(my_row.ID, reverse_row.ID)
+        existing_chat = db.query(Chat).filter(
+            and_(Chat.MatchesID == canonical_match_id, Chat.Status == True)
+        ).first()
 
-    # ---- crear chat solo una vez cuando aparece el match ----
-    if not was_match and is_match:
-        existing_chat = db.query(Chat).filter(Chat.MatchesID == row.ID, Chat.Status == True).first()
         if not existing_chat:
-            system_msg = Chat(
-                MatchesID=row.ID,
-                SenderID=me,  # o None si permitís nulos
-                ContentChat="¡Se creó el chat por match!",
+            new_chat = Chat(
+                MatchesID=canonical_match_id,
+                SenderID=my_id,
+                ContentChat="Chat creado por match",
                 CreatedDate=datetime.utcnow(),
                 Status=True,
-                ReadChat=False,
+                ReadChat=False
             )
-            db.add(system_msg)
+            db.add(new_chat)
             db.commit()
-            db.refresh(system_msg)
+            db.refresh(new_chat)
             return {
                 "message": "¡Es un match!",
                 "match": True,
-                "chat_id": system_msg.ID,
-                "match_id": row.ID,
-                "game_id": selected_game_id,
-                "is_ranked": bool(match_is_ranked),
+                "chat_id": new_chat.ID,
+                "matches_ids": [my_row.ID, reverse_row.ID],
+                "game_id_inferido": selected_game_id,
+                "is_ranked": bool(match_is_ranked)
             }
+
+        return {
+            "message": "¡Es un match!",
+            "match": True,
+            "chat_id": existing_chat.ID,
+            "matches_ids": [my_row.ID, reverse_row.ID],
+            "game_id_inferido": selected_game_id,
+            "is_ranked": bool(match_is_ranked)
+        }
 
     return {
         "message": "Swipe registrado/actualizado",
-        "match": is_match,
-        "match_id": row.ID,
-        "liked_by_low_high": [bool(row.LikedByUser1), bool(row.LikedByUser2)],
-        "game_id": selected_game_id,
-        "is_ranked": bool(match_is_ranked),
-        "created_now": created_now,
+        "match": False,
+        "status": my_row.Status,
+        "game_id_inferido": selected_game_id,
+        "is_ranked": bool(match_is_ranked)
     }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import styles from "../../styles/pages/preferences.module.css";
 import { useState, useEffect } from "react";
 import Image from 'next/image';
@@ -7,7 +8,9 @@ import { profileService } from '../../lib/auth';
 
 export default function Preferences() {
   const [notifications, setNotifications] = useState<boolean>(true);
+  const [language, setLanguage] = useState<string>("es");
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+  const [playStyle, setPlayStyle] = useState<string>("ambos");
   const [ageRange, setAgeRange] = useState<[number, number]>([18, 40]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasChanges, setHasChanges] = useState<boolean>(false);
@@ -99,6 +102,16 @@ export default function Preferences() {
     setHasChanges(true);
   };
 
+  const handleLanguageChange = (lang: string): void => {
+    setLanguage(lang);
+    localStorage.setItem('language', lang);
+  };
+
+  const handlePlayStyleChange = (style: string): void => {
+    setPlayStyle(style);
+    localStorage.setItem('playStyle', style);
+  };
+
   const handleAgeRangeChange = (min: number, max: number): void => {
     const newAgeRange: [number, number] = [min, max];
     setAgeRange(newAgeRange);
@@ -156,7 +169,6 @@ export default function Preferences() {
                 <input 
                   type="checkbox" 
                   id="darkMode" 
-                  className={styles.toggleInput}
                   checked={isDarkMode}
                   onChange={(e) => handleThemeChange(e.target.checked)}
                 />
@@ -174,7 +186,6 @@ export default function Preferences() {
                 <input 
                   type="checkbox" 
                   id="notifications" 
-                  className={styles.toggleInput}
                   checked={notifications}
                   onChange={(e) => handleNotificationsChange(e.target.checked)}
                 />
@@ -186,6 +197,21 @@ export default function Preferences() {
           <h2 className={styles.sectionTitle}>Buscando</h2>
 
           <div className={styles.optionGroup}>
+            <div className={styles.option}>
+              <span className={styles.optionLabel}>Estilo de juego</span>
+              <div className={styles.dropdownContainer}>
+                <select 
+                  value={playStyle}
+                  onChange={(e) => handlePlayStyleChange(e.target.value)}
+                  className={styles.dropdown}
+                >
+                  <option value="competitivo">Competitivo</option>
+                  <option value="casual">Casual</option>
+                  <option value="ambos">Ambos</option>
+                </select>
+              </div>
+            </div>
+
             <div className={styles.option}>
               <div className={styles.ageRangeContainer}>
                 <span className={styles.optionLabel}>Rango de edad</span>
