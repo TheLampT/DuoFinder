@@ -1,4 +1,61 @@
 /* app/globals.css */
+:root {
+  /* Core colors */
+  --bg: #0b0f14;
+  --text: #e8eaf0;
+  --muted: #a7b0c0;
+  --outline: #2a3445;
+  --red: #e74a4a;
+  --purple: #2b1f5a;
+  
+  /* Bottom bar */
+  --bottom-bar-bg: #ffffff;
+  --bottom-bar-border: #e0e0e0;
+  
+  /* Profile page */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+  
+  /* Modal/Profile Detail */
+  --modal-bg: #ffffff;
+  --modal-text: #111827;
+  
+  /* Cards */
+  --card-bg: #ffffff;
+  --card-text: #111827;
+  --card-border: #e5e7eb;
+  
+  /* Common styles */
+  --shadow: 0 22px 60px rgba(0,0,0,.45);
+  --border-radius: 22px;
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+  /* Bottom bar */
+  --bottom-bar-bg: #121826;
+  --bottom-bar-border: #2a3445;
+  
+  /* Profile page */
+  --bg-primary: #0b0f14;
+  --bg-secondary: #121826;
+  --text-primary: #e8eaf0;
+  --text-secondary: #a7b0c0;
+  --border-color: #2a3445;
+  
+  /* Modal/Profile Detail */
+  --modal-bg: #121826;
+  --modal-text: #e8eaf0;
+  
+  /* Cards */
+  --card-bg: #121826;
+  --card-text: #e8eaf0;
+  --card-border: #2a3445;
+}
+
 * {
   box-sizing: border-box;
   padding: 0;
@@ -14,13 +71,8 @@ body {
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  color: var(--text);
+  background: var(--bg);
 }
 
 a {
@@ -41,8 +93,8 @@ a {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  background-color: white;
-  border-top: 1px solid #e0e0e0;
+  background-color: var(--bottom-bar-bg);
+  border-top: 1px solid var(--bottom-bar-border);
   padding: 8px 0;
   height: 60px;
   z-index: 1000;
@@ -60,11 +112,11 @@ a {
 }
 
 .nav-item:hover {
-  color: #ff4458;
+  color: var(--red);
 }
 
 .nav-item.active {
-  color: #ff4458;
+  color: var(--red);
 }
 
 .nav-item svg {
@@ -79,20 +131,22 @@ a {
 
 .demo-container h1 {
   margin-bottom: 20px;
-  color: #ff4458;
+  color: var(--red);
 }
 
 .page-content {
-  background-color: #f8f9fa;
+  background-color: var(--card-bg);
+  color: var(--card-text);
   border-radius: 12px;
   padding: 20px;
   margin: 20px auto;
   max-width: 600px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--card-border);
 }
 
 .nav-instructions {
   margin-top: 30px;
-  color: #666;
+  color: var(--muted);
   font-style: italic;
 }
