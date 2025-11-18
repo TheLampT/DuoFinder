@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Profile } from '@/test/mock/mockData';
 import styles from '@/styles/components/ProfileDetail.module.css';
 
@@ -17,9 +17,6 @@ const ProfileDetail: React.FC<ProfileDetailProps> = ({
   onLike, 
   onDislike 
 }) => {
-  const [showCopyFeedback, setShowCopyFeedback] = useState(false);
-  const [copiedUsername, setCopiedUsername] = useState('');
-
   if (!isOpen) return null;
 
   const handleLike = () => {

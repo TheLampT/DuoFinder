@@ -66,8 +66,8 @@ export default function RegisterPage() {
       
     } catch (err: unknown) {
       console.error('Registration error:', err);
-       const errorMessage = err instanceof Error ? err.message : 'No se pudo crear la cuenta. Intentalo de nuevo.';
-       setError(errorMessage)
+      const errorMessage = err instanceof Error ? err.message : 'No se pudo crear la cuenta. Intentalo de nuevo.';
+      setError(errorMessage)
     } finally {
       setSubmitting(false);
     }
