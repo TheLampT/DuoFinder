@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 import { authService } from '../../lib/auth';
 import Image from 'next/image';
 
-export default function LoginPage() {
+// Create a separate component for the login form that uses useSearchParams
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get('next') || '/profile';
@@ -55,7 +56,12 @@ export default function LoginPage() {
       <div className={styles.card}>
         <section className={styles.left}>
           <div className={styles.logoRow}>
-            <Image src="/favicon.ico" alt="DuoFinder" />
+            <Image 
+              src="/favicon.ico" 
+              alt="DuoFinder" 
+              width={40}
+              height={40}
+            />
             <span>DuoFinder</span>
           </div>
 
@@ -109,12 +115,44 @@ export default function LoginPage() {
           aria-hidden
         >
           <div className={styles.brandMark}>
-            <Image src="/favicon.ico" alt="" />
+            <Image 
+              src="/favicon.ico" 
+              alt="" 
+              width={56}
+              height={56}
+            />
             <strong>DuoFinder</strong>
             <p>Encontrá tu dúo ideal para jugar.</p>
           </div>
         </aside>
       </div>
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className={styles.shell}>
+        <div className={styles.card}>
+          <section className={styles.left}>
+            <div className={styles.logoRow}>
+              <Image 
+                src="/favicon.ico" 
+                alt="DuoFinder" 
+                width={40}
+                height={40}
+              />
+              <span>DuoFinder</span>
+            </div>
+            <h1 className={styles.welcome}>¡Bienvenido!</h1>
+            <p className={styles.sub}>Cargando...</p>
+          </section>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
