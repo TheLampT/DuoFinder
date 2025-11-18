@@ -85,6 +85,7 @@ export default function Preferences() {
                   id="darkMode" 
                   checked={isDarkMode}
                   onChange={(e) => handleThemeChange(e.target.checked)}
+                  className={styles.toggleInput} // Added class
                 />
                 <label htmlFor="darkMode" className={styles.toggleSlider}></label>
               </div>
@@ -102,6 +103,7 @@ export default function Preferences() {
                   id="notifications" 
                   checked={notifications}
                   onChange={(e) => handleNotificationsChange(e.target.checked)}
+                  className={styles.toggleInput} // Added class
                 />
                 <label htmlFor="notifications" className={styles.toggleSlider}></label>
               </div>

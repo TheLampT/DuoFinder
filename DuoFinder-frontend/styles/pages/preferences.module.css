@@ -101,7 +101,7 @@
   height: 24px;
 }
 
-.toggleSwitch input {
+.toggleInput {
   opacity: 0;
   width: 0;
   height: 0;
@@ -131,14 +131,12 @@
   border-radius: 50%;
 }
 
-/* Replace the global input selectors with class-based ones */
-
-.radioInput:checked + .radioLabel {
-  border-color: var(--accent);
+.toggleInput:checked + .toggleSlider {
+  background-color: var(--accent);
 }
 
-.radioInput:checked + .radioLabel:after {
-  display: block;
+.toggleInput:checked + .toggleSlider:before {
+  transform: translateX(26px);
 }
 
 /* Radio Buttons */
@@ -149,13 +147,13 @@
   height: 24px;
 }
 
-.radio input {
+.radioInput {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.radio label {
+.radioLabel {
   position: absolute;
   cursor: pointer;
   top: 0;
@@ -168,7 +166,7 @@
   transition: .2s;
 }
 
-.radio label:after {
+.radioLabel:after {
   content: "";
   position: absolute;
   display: none;
@@ -181,11 +179,11 @@
   transform: translate(-50%, -50%);
 }
 
-input:checked + label {
+.radioInput:checked + .radioLabel {
   border-color: var(--accent);
 }
 
-input:checked + label:after {
+.radioInput:checked + .radioLabel:after {
   display: block;
 }
 
@@ -253,6 +251,7 @@ input:checked + label:after {
     font-size: 0.95rem;
   }
 }
+
 /* Age Range Slider Styles */
 .ageRangeContainer {
   display: flex;
