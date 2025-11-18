@@ -131,12 +131,14 @@
   border-radius: 50%;
 }
 
-input:checked + .toggleSlider {
-  background-color: var(--accent);
+/* Replace the global input selectors with class-based ones */
+
+.radioInput:checked + .radioLabel {
+  border-color: var(--accent);
 }
 
-input:checked + .toggleSlider:before {
-  transform: translateX(26px);
+.radioInput:checked + .radioLabel:after {
+  display: block;
 }
 
 /* Radio Buttons */

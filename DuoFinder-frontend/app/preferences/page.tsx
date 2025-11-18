@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import styles from "../../styles/pages/preferences.module.css";
 import { useState, useEffect } from "react";
 
