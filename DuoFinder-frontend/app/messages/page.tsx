@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from '@/styles/pages/messages.module.css';
+import Image from 'next/image';
 
 interface UserProfile {
   id: string;
@@ -300,7 +301,7 @@ const MessagesPage = () => {
       {/* Matches sidebar - conditionally rendered on mobile */}
       <div className={`${styles.matchesSidebar} ${showSidebar ? styles.active : ''}`}>
           <div className={styles.sidebarHeader}>
-            <img src="/favicon.ico" alt="DuoFinder" className={styles.logo} />
+            <Image src="/favicon.ico" alt="DuoFinder" className={styles.logo} />
             <span className={styles.brandText}>Mensajes</span>
           <div className={styles.searchContainer}>
             <input
@@ -320,7 +321,7 @@ const MessagesPage = () => {
               onClick={() => handleSelectMatch(match)}
             >
               <div className={styles.matchAvatar}>
-                <img
+                <Image
                   src={match.user.avatar}
                   alt={match.user.name}
                 />
@@ -369,7 +370,7 @@ const MessagesPage = () => {
                 onClick={() => setShowProfile(!showProfile)}
               >
                 <div className={styles.chatAvatar}>
-                  <img
+                  <Image
                     src={selectedMatch.user.avatar}
                     alt={selectedMatch.user.name}
                   />
@@ -399,7 +400,7 @@ const MessagesPage = () => {
               <div className={styles.profileView}>
                 <div className={styles.profileHeader}>
                   <div className={styles.profileAvatar}>
-                    <img
+                    <Image
                       src={selectedMatch.user.avatar}
                       alt={selectedMatch.user.name}
                     />

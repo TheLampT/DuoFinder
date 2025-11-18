@@ -4,23 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import { profileService, UserProfile, UpdateProfileRequest } from '../../lib/auth';
+import Image from 'next/image';
 
 // Helpers
 function truncate(text: string, n = 100) {
   if (!text) return '';
   return text.length > n ? text.slice(0, n - 1) + '…' : text;
 }
-
-// Game options for the chips
-const GAME_OPTIONS: Array<{ id: string; name: string; ranks: string[] }> = [
-  { id: 'valorant', name: 'Valorant', ranks: ['Hierro','Bronce','Plata','Oro','Platino','Diamante','Ascendente','Inmortal','Radiante'] },
-  { id: 'lol', name: 'League of Legends', ranks: ['Hierro','Bronce','Plata','Oro','Platino','Diamante','Maestro','Gran Maestro','Retador'] },
-  { id: 'cs2', name: 'CS2', ranks: ['Silver','Gold Nova','Master Guardian','Legendary Eagle','Supreme','Global Elite'] },
-  { id: 'apex', name: 'Apex Legends', ranks: ['Bronce','Plata','Oro','Platino','Diamante','Maestro','Depredador'] },
-  { id: 'fortnite', name: 'Fortnite', ranks: ['Bronce','Plata','Oro','Platino','Diamante','Élite','Campeón','Unreal'] },
-];
-
-const SEEKING_OPTIONS = ['Casual', 'Competitivo'] as const;
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -40,12 +30,13 @@ export default function ProfilePage() {
         setLoading(true);
         const userProfile = await profileService.getProfile();
         setProfile(userProfile);
-      } catch (err: any) {
+      } catch (err: unknown) { // Fixed: removed 'any'
         console.error('Failed to load profile:', err);
-        setError(err.message || 'Failed to load profile');
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load profile';
+        setError(errorMessage);
         
         // If unauthorized, redirect to login
-        if (err.message.includes('Authentication') || err.message.includes('401')) {
+        if (errorMessage.includes('Authentication') || errorMessage.includes('401')) {
           router.push('/login');
         }
       } finally {
@@ -62,37 +53,37 @@ export default function ProfilePage() {
     }
   }
 
-  // Update game skill level
-  function updateGameSkill(gameId: number, field: string, value: any) {
-    if (!profile || !editing) return;
+  // Update game skill level (commented out since unused)
+  // function updateGameSkill(gameId: number, field: string, value: unknown) {
+  //   if (!profile || !editing) return;
     
-    setProfile(prev => {
-      if (!prev?.games) return prev;
+  //   setProfile(prev => {
+  //     if (!prev?.games) return prev;
       
-      const updatedGames = prev.games.map(game => 
-        game.game_id === gameId ? { ...game, [field]: value } : game
-      );
+  //     const updatedGames = prev.games.map(game => 
+  //       game.game_id === gameId ? { ...game, [field]: value } : game
+  //     );
       
-      return { ...prev, games: updatedGames };
-    });
-  }
+  //     return { ...prev, games: updatedGames };
+  //   });
+  // }
 
-  // Game selection handlers (for future implementation)
-  function toggleGame(gameId: string) {
-    if (!editing || !profile) return;
-    console.log('Game toggle would be implemented here');
-  }
+  // Game selection handlers (commented out since unused)
+  // function toggleGame(gameId: string) {
+  //   if (!editing || !profile) return;
+  //   console.log('Game toggle would be implemented here');
+  // }
 
-  function setRank(gameId: string, rank: string) {
-    if (!editing || !profile) return;
-    console.log('Rank update would be implemented here');
-  }
+  // function setRank(gameId: string, rank: string) {
+  //   if (!editing || !profile) return;
+  //   console.log('Rank update would be implemented here');
+  // }
 
-  // Seeking handlers (for future implementation)
-  function toggleSeeking(option: typeof SEEKING_OPTIONS[number]) {
-    if (!editing || !profile) return;
-    console.log('Seeking update would be implemented here');
-  }
+  // Seeking handlers (commented out since unused)
+  // function toggleSeeking(option: string) {
+  //   if (!editing || !profile) return;
+  //   console.log('Seeking update would be implemented here');
+  // }
 
   // Avatar handlers
   function pickAvatar() { if (editing) fileInputRef.current?.click(); }
@@ -142,9 +133,10 @@ export default function ProfilePage() {
       const updatedProfile = await profileService.getProfile();
       setProfile(updatedProfile);
       
-    } catch (err: any) {
+    } catch (err: unknown) { // Fixed: removed 'any'
       console.error('Failed to update profile:', err);
-      setError(err.message || 'No se pudieron guardar los cambios.');
+      const errorMessage = err instanceof Error ? err.message : 'No se pudieron guardar los cambios.';
+      setError(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -183,8 +175,9 @@ export default function ProfilePage() {
     );
   }
 
-  const selectedGameIds = new Set((profile.games ?? []).map((g) => g.game_id?.toString() ?? ''));
-  const selectedSeeking = new Set(['Competitivo']); // Default for now
+  // Removed unused variables
+  // const selectedGameIds = new Set((profile.games ?? []).map((g) => g.game_id?.toString() ?? ''));
+  // const selectedSeeking = new Set(['Competitivo']);
 
   return (
     <div className={styles.page}>
@@ -197,7 +190,13 @@ export default function ProfilePage() {
           />
           <div className={styles.heroOverlay} />
           <div className={styles.heroContent}>
-            <img src="/favicon.ico" alt="DuoFinder" className={styles.heroLogo} />
+            <Image 
+              src="/favicon.ico" 
+              alt="DuoFinder" 
+              className={styles.heroLogo}
+              width={40}
+              height={40}
+            />
             <h1 className={styles.title}>Mi Perfil</h1>
             <p className={styles.heroSub}>
               Personalizá tu perfil para encontrar el dúo ideal. Recordá guardar los cambios antes de salir!
@@ -235,7 +234,7 @@ export default function ProfilePage() {
                 <button 
                   type="button" 
                   className={styles.btn} 
-                  onClick={onSubmit as any} 
+                  onClick={onSubmit} 
                   disabled={saving}
                 >
                   {saving ? 'Guardando…' : 'Guardar'}
