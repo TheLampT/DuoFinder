@@ -230,11 +230,8 @@ def update_profile(
             "discord": current_user.Discord,
             "tracker": current_user.Tracker,
             "birthdate": str(current_user.BirthDate),
-<<<<<<< HEAD
             "age_min": current_user.AgeMin,
             "age_max": current_user.AgeMax,
-=======
->>>>>>> parent of f17c93d (BE - add images)
         }
     }
 
