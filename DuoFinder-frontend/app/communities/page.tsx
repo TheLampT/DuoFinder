@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import styles from './communities.module.css';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 type GameId = 'lol' | 'valorant' | 'cs2' | 'tft' | 'overwatch';
@@ -11,11 +12,15 @@ interface Community {
   name: string;
   gameId: GameId;
   gameName: string;
+  extraGames?: GameId[];
   members: number;
   description: string;
-  // En el futuro podés reemplazar esto por una URL real de logo
   logoInitials: string;
+  logoUrl?: string;
+  createdBy: string; // 'me' si la creó el usuario
 }
+
+const CURRENT_USER_ID = 'me';
 
 const MOCK_COMMUNITIES: Community[] = [
   {
@@ -26,51 +31,7 @@ const MOCK_COMMUNITIES: Community[] = [
     members: 128,
     description: 'Comunidad para armar flex, clash y equipos tryhard en LAS.',
     logoInitials: 'FX',
-  },
-  {
-    id: 2,
-    name: 'Valorant Argentina',
-    gameId: 'valorant',
-    gameName: 'Valorant',
-    members: 342,
-    description: 'Stackeá ranked, scrims y customs con jugadores argentinos.',
-    logoInitials: 'VA',
-  },
-  {
-    id: 3,
-    name: 'Iron to Immortal',
-    gameId: 'valorant',
-    gameName: 'Valorant',
-    members: 87,
-    description: 'Comunidad chill para mejorar en ranked sin flameo.',
-    logoInitials: 'II',
-  },
-  {
-    id: 4,
-    name: 'ARAM All Day',
-    gameId: 'lol',
-    gameName: 'League of Legends',
-    members: 210,
-    description: 'Solo ARAM, sin drama. Partidas rápidas y divertidas.',
-    logoInitials: 'AA',
-  },
-  {
-    id: 5,
-    name: 'CS2 Late Night Stack',
-    gameId: 'cs2',
-    gameName: 'CS2',
-    members: 64,
-    description: 'Para jugar de noche, mix y rankeds con micro obligatorio.',
-    logoInitials: 'LN',
-  },
-  {
-    id: 6,
-    name: 'TFT LATAM',
-    gameId: 'tft',
-    gameName: 'TFT',
-    members: 153,
-    description: 'Comunidad para compartir comps, parches y lobbys amistosos.',
-    logoInitials: 'TF',
+    createdBy: 'system',
   },
 ];
 
@@ -84,21 +45,284 @@ const GAME_FILTERS: { id: GameId | 'all'; label: string }[] = [
 ];
 
 export default function CommunitiesPage() {
+  const router = useRouter();
+
+  // Comunidades creadas por el usuario (derivadas de joinedCommunities)
+  const [userCommunities, setUserCommunities] = useState<Community[]>([]);
   const [search, setSearch] = useState('');
   const [gameFilter, setGameFilter] = useState<GameId | 'all'>('all');
 
+  // Modal
+  const [showModal, setShowModal] = useState(false);
+  const [editingCommunity, setEditingCommunity] = useState<Community | null>(null);
+
+  // Campos del formulario de la modal
+  const [formName, setFormName] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formLogoUrl, setFormLogoUrl] = useState('');
+  const [formGames, setFormGames] = useState<GameId[]>([]);
+
+  // ========== CARGA DESDE joinedCommunities ==========
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const raw = localStorage.getItem('joinedCommunities');
+    if (!raw) {
+      setUserCommunities([]);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as any[];
+
+      // Solo las creadas por mí y que tengan datos de comunidad
+      const mine = parsed.filter(
+        (c) => c && c.createdBy === CURRENT_USER_ID && c.gameId
+      );
+
+      const mapped: Community[] = mine.map((c, idx) => {
+        const name = (c.name || 'Comunidad').toString().trim();
+        const primaryGameId: GameId = (c.gameId as GameId) || 'lol';
+        const primaryGame =
+          GAME_FILTERS.find((g) => g.id === primaryGameId) || GAME_FILTERS[1];
+
+        return {
+          id:
+            typeof c.id === 'number'
+              ? c.id
+              : MOCK_COMMUNITIES.length + idx + 1,
+          name,
+          description: (c.description || '').toString(),
+          logoUrl: c.logoUrl || undefined,
+          logoInitials:
+            c.logoInitials ||
+            name.substring(0, 2).toUpperCase(),
+          gameId: primaryGame.id as GameId,
+          gameName: primaryGame.label,
+          extraGames: (c.extraGames as GameId[] | undefined) || [],
+          members:
+            typeof c.members === 'number' ? c.members : 1,
+          createdBy: CURRENT_USER_ID,
+        };
+      });
+
+      setUserCommunities(mapped);
+    } catch {
+      setUserCommunities([]);
+    }
+  }, []);
+
+  // Todas las comunidades: las fijas + las mías
+  const communities = useMemo(
+    () => [...MOCK_COMMUNITIES, ...userCommunities],
+    [userCommunities]
+  );
+
+  // ========== FILTRO ==========
+
   const filteredCommunities = useMemo(() => {
-    return MOCK_COMMUNITIES.filter((c) => {
-      const matchesGame = gameFilter === 'all' || c.gameId === gameFilter;
+    return communities.filter((c) => {
+      const matchesGame =
+        gameFilter === 'all' ||
+        c.gameId === gameFilter ||
+        (c.extraGames?.includes(gameFilter as GameId) ?? false);
+
       const query = search.trim().toLowerCase();
+      const gamesLabel = [
+        c.gameName,
+        ...(c.extraGames
+          ? c.extraGames
+              .map((g) => GAME_FILTERS.find((gf) => gf.id === g)?.label || '')
+              .filter(Boolean)
+          : []),
+      ].join(', ');
+
       const matchesSearch =
         !query ||
         c.name.toLowerCase().includes(query) ||
         c.description.toLowerCase().includes(query) ||
-        c.gameName.toLowerCase().includes(query);
+        gamesLabel.toLowerCase().includes(query);
+
       return matchesGame && matchesSearch;
     });
-  }, [search, gameFilter]);
+  }, [communities, search, gameFilter]);
+
+  // ========== MODAL CREAR / EDITAR ==========
+
+  const openCreateModal = () => {
+    setEditingCommunity(null);
+    setFormName('');
+    setFormDescription('');
+    setFormLogoUrl('');
+    setFormGames([]);
+    setShowModal(true);
+  };
+
+  const openEditModal = (community: Community) => {
+    setEditingCommunity(community);
+    setFormName(community.name);
+    setFormDescription(community.description);
+    setFormLogoUrl(community.logoUrl || '');
+    const games: GameId[] = [
+      community.gameId,
+      ...(community.extraGames ?? []),
+    ];
+    setFormGames(games);
+    setShowModal(true);
+  };
+
+  const closeModal = () => setShowModal(false);
+
+  const toggleGameInForm = (id: GameId) => {
+    setFormGames((prev) =>
+      prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]
+    );
+  };
+
+  // ========== GUARDAR COMUNIDAD (crear / editar) ==========
+
+  const handleSubmitCommunity = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formName.trim()) return;
+    if (formGames.length === 0) return;
+
+    const primaryGameId = formGames[0];
+    const primaryGame = GAME_FILTERS.find((g) => g.id === primaryGameId);
+    const extraGames = formGames.slice(1);
+
+    if (!primaryGame || primaryGame.id === 'all') return;
+
+    if (editingCommunity) {
+      // EDITAR EXISTENTE
+      setUserCommunities((prev) => {
+        const updated = prev.map((c) =>
+          c.id === editingCommunity.id
+            ? {
+                ...c,
+                name: formName.trim(),
+                description: formDescription.trim(),
+                logoUrl: formLogoUrl.trim() || undefined,
+                gameId: primaryGameId,
+                gameName: primaryGame.label,
+                extraGames,
+              }
+            : c
+        );
+
+        // Actualizar también en joinedCommunities
+        if (typeof window !== 'undefined') {
+          const raw = localStorage.getItem('joinedCommunities');
+          const joined = raw ? JSON.parse(raw) : [];
+          const joinedUpdated = joined.map((c: any) =>
+            c.id === editingCommunity.id
+              ? {
+                  ...c,
+                  name: formName.trim(),
+                  description: formDescription.trim(),
+                  logoUrl: formLogoUrl.trim() || undefined,
+                  gameId: primaryGameId,
+                  gameName: primaryGame.label,
+                  extraGames,
+                  createdBy: CURRENT_USER_ID,
+                }
+              : c
+          );
+          localStorage.setItem(
+            'joinedCommunities',
+            JSON.stringify(joinedUpdated)
+          );
+        }
+
+        return updated;
+      });
+    } else {
+      // CREAR NUEVA
+      const newId =
+        communities.reduce((max, c) => Math.max(max, c.id), 0) + 1;
+
+      const newCommunity: Community = {
+        id: newId,
+        name: formName.trim(),
+        description: formDescription.trim(),
+        logoUrl: formLogoUrl.trim() || undefined,
+        logoInitials: formName.trim().substring(0, 2).toUpperCase(),
+        gameId: primaryGameId,
+        gameName: primaryGame.label,
+        extraGames,
+        members: 1,
+        createdBy: CURRENT_USER_ID,
+      };
+
+      // 1) Guardar en estado
+      setUserCommunities((prev) => [...prev, newCommunity]);
+
+      // 2) Guardar en joinedCommunities (origen compartido con Mensajes)
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('joinedCommunities');
+        const joined = raw ? JSON.parse(raw) : [];
+        joined.push({
+          ...newCommunity,
+        });
+        localStorage.setItem('joinedCommunities', JSON.stringify(joined));
+      }
+
+      // 3) Abrir chat de esa comunidad
+      router.push(
+        `/messages?communityId=${newCommunity.id}&communityName=${encodeURIComponent(
+          newCommunity.name
+        )}`
+      );
+    }
+
+    setShowModal(false);
+  };
+
+  // ========== UNIRSE A COMUNIDAD EXISTENTE ==========
+
+  const handleJoinCommunity = (community: Community) => {
+    if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem('joinedCommunities');
+      const joined = raw ? JSON.parse(raw) : [];
+
+      if (!joined.some((c: any) => c.id === community.id)) {
+        joined.push({
+          ...community,
+          createdBy: community.createdBy || 'system',
+        });
+        localStorage.setItem('joinedCommunities', JSON.stringify(joined));
+      }
+    }
+
+    router.push(
+      `/messages?communityId=${community.id}&communityName=${encodeURIComponent(
+        community.name
+      )}`
+    );
+  };
+
+  // ========== ELIMINAR COMUNIDAD CREADA POR MÍ ==========
+
+  const handleDeleteCommunity = (community: Community) => {
+    if (
+      typeof window !== 'undefined' &&
+      !window.confirm(
+        '¿Eliminar esta comunidad? Esta acción no se puede deshacer.'
+      )
+    ) {
+      return;
+    }
+
+    setUserCommunities((prev) => prev.filter((c) => c.id !== community.id));
+
+    if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem('joinedCommunities');
+      const joined = raw ? JSON.parse(raw) : [];
+      const filtered = joined.filter((c: any) => c.id !== community.id);
+      localStorage.setItem('joinedCommunities', JSON.stringify(filtered));
+    }
+  };
+
+  // ========== RENDER ==========
 
   return (
     <main className={styles.page}>
@@ -123,7 +347,7 @@ export default function CommunitiesPage() {
 
         {/* CONTENIDO PRINCIPAL */}
         <section className={styles.layout}>
-          {/* Columna izquierda: búsqueda + filtros + crear */}
+          {/* Columna izquierda */}
           <div className={styles.leftCol}>
             <div className={styles.panel}>
               <h2 className={styles.panelTitle}>Buscar comunidades</h2>
@@ -160,67 +384,25 @@ export default function CommunitiesPage() {
               </div>
             </div>
 
-            {/* Panel para crear comunidad */}
+            {/* Panel crear comunidad */}
             <div className={styles.panel}>
               <h2 className={styles.panelTitle}>Crear una comunidad</h2>
               <p className={styles.panelText}>
-                ¿Tenés una idea para una comunidad nueva? Reservá el nombre, cargá un logo y definí el juego
-                principal. Más adelante conectamos esto al backend para guardar y listar las comunidades reales.
+                Creá un grupo para tu juego o stack habitual. Después lo vamos a
+                conectar al backend para que quede persistido.
               </p>
 
-              <form
-                className={styles.createForm}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  // Acá después podemos disparar un modal o llamada a la API
-                  alert('En el MVP esto solo es UI. Después lo conectamos al backend.');
-                }}
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                onClick={openCreateModal}
               >
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="communityName">
-                    Nombre de la comunidad
-                  </label>
-                  <input
-                    id="communityName"
-                    className={styles.input}
-                    type="text"
-                    placeholder="Ej: Stackers LAS, Valorant Chill AR..."
-                  />
-                </div>
-
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="communityGame">
-                    Juego principal
-                  </label>
-                  <select id="communityGame" className={styles.input}>
-                    <option value="">Elegí un juego</option>
-                    {GAME_FILTERS.filter((g) => g.id !== 'all').map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Logo placeholder bien claro */}
-                <div className={styles.field}>
-                  <span className={styles.label}>Logo de la comunidad</span>
-                  <div className={styles.logoDropzone}>
-                    <span className={styles.logoHint}>
-                      Espacio reservado para el logo
-                      <br />
-                      (más adelante lo conectamos a subida de imagen)
-                    </span>
-                  </div>
-                </div>
-
-                <button type="submit" className={styles.primaryBtn}>
-                  Crear comunidad (UI)
-                </button>
-              </form>
+                + Nueva comunidad
+              </button>
             </div>
           </div>
 
+          {/* Columna derecha: lista */}
           {/* Columna derecha: lista de comunidades */}
           <div className={styles.rightCol}>
             <div className={styles.listHeader}>
@@ -232,41 +414,104 @@ export default function CommunitiesPage() {
             </div>
 
             <div className={styles.communityGrid}>
-              {filteredCommunities.map((community) => (
-                <article key={community.id} className={styles.communityCard}>
-                  {/* Logo / espacio para imagen */}
-                  <div className={styles.communityLogoWrapper}>
-                    {/* En el futuro: reemplazar por <Image src={logoUrl} ... /> */}
-                    <div className={styles.communityLogo}>
-                      <span className={styles.communityLogoText}>
-                        {community.logoInitials}
-                      </span>
-                    </div>
-                  </div>
+              {filteredCommunities.map((community) => {
+                const allGameLabels = [
+                  community.gameName,
+                  ...(community.extraGames
+                    ? community.extraGames
+                        .map(
+                          (g) =>
+                            GAME_FILTERS.find((gf) => gf.id === g)?.label ||
+                            ''
+                        )
+                        .filter(Boolean)
+                    : []),
+                ].join(' • ');
 
-                  {/* Info */}
-                  <div className={styles.communityInfo}>
-                    <h3 className={styles.communityName}>{community.name}</h3>
-                    <div className={styles.communityMeta}>
-                      <span className={styles.metaTag}>{community.gameName}</span>
-                      <span className={styles.metaTag}>
-                        {community.members} miembro{community.members !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    <p className={styles.communityDescription}>{community.description}</p>
-                  </div>
+                const isOwner =
+                  !community.createdBy ||
+                  community.createdBy === CURRENT_USER_ID;
 
-                  {/* Acción */}
-                  <div className={styles.communityActions}>
-                    <button type="button" className={styles.outlineBtn}>
-                      Ver detalles
-                    </button>
-                    <button type="button" className={styles.joinBtn}>
-                      Unirme
-                    </button>
-                  </div>
-                </article>
-              ))}
+                return (
+                  <article
+                    key={community.id}
+                    className={styles.communityCard}
+                  >
+                    {/* Logo / imagen */}
+                    <div className={styles.communityLogoWrapper}>
+                      {community.logoUrl ? (
+                        <Image
+                          src={community.logoUrl}
+                          alt={community.name}
+                          width={56}
+                          height={56}
+                          className={styles.communityLogoImage}
+                        />
+                      ) : (
+                        <div className={styles.communityLogo}>
+                          <span className={styles.communityLogoText}>
+                            {community.logoInitials}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className={styles.communityInfo}>
+                      <h3 className={styles.communityName}>
+                        {community.name}
+                      </h3>
+                      <div className={styles.communityMeta}>
+                        <span className={styles.metaTag}>
+                          {allGameLabels}
+                        </span>
+                        <span className={styles.metaTag}>
+                          {community.members} miembro
+                          {community.members !== 1 ? 's' : ''}
+                        </span>
+                        {isOwner && (
+                          <span className={styles.ownerTag}>
+                            CREADOR
+                          </span>
+                        )}
+                      </div>
+                      <p className={styles.communityDescription}>
+                        {community.description}
+                      </p>
+                    </div>
+
+                    {/* Acción */}
+                    <div className={styles.communityActions}>
+                      <button
+                        type="button"
+                        className={styles.joinBtn}
+                        onClick={() => handleJoinCommunity(community)}
+                      >
+                        Unirme
+                      </button>
+
+                      {isOwner && (
+                        <>
+                          <button
+                            type="button"
+                            className={styles.smallBtn}
+                            onClick={() => openEditModal(community)}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.smallDangerBtn}
+                            onClick={() => handleDeleteCommunity(community)}
+                          >
+                            Eliminar
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
 
               {filteredCommunities.length === 0 && (
                 <div className={styles.emptyState}>
@@ -276,8 +521,113 @@ export default function CommunitiesPage() {
               )}
             </div>
           </div>
+
         </section>
       </div>
+
+      {/* MODAL CREAR / EDITAR */}
+      {showModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>
+                {editingCommunity ? 'Editar comunidad' : 'Crear comunidad'}
+              </h2>
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={closeModal}
+              >
+                ×
+              </button>
+            </div>
+
+            <form className={styles.modalBody} onSubmit={handleSubmitCommunity}>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="communityName">
+                  Nombre
+                </label>
+                <input
+                  id="communityName"
+                  className={styles.input}
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="Ej: Stackers LAS, Valorant Chill AR..."
+                  required
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="communityDesc">
+                  Descripción
+                </label>
+                <textarea
+                  id="communityDesc"
+                  className={styles.textarea}
+                  rows={3}
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Contá brevemente de qué se trata la comunidad."
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="communityLogo">
+                  Logo (URL – opcional)
+                </label>
+                <input
+                  id="communityLogo"
+                  className={styles.input}
+                  type="url"
+                  value={formLogoUrl}
+                  onChange={(e) => setFormLogoUrl(e.target.value)}
+                  placeholder="https://..."
+                />
+                <span className={styles.hint}>
+                  Más adelante vamos a permitir subir imágenes.
+                </span>
+              </div>
+
+              <div className={styles.field}>
+                <span className={styles.label}>Juegos</span>
+                <div className={styles.gamesGrid}>
+                  {GAME_FILTERS.filter((g) => g.id !== 'all').map((g) => (
+                    <label key={g.id} className={styles.gameCheckbox}>
+                      <input
+                        type="checkbox"
+                        checked={formGames.includes(g.id as GameId)}
+                        onChange={() => toggleGameInForm(g.id as GameId)}
+                      />
+                      <span>{g.label}</span>
+                    </label>
+                  ))}
+                </div>
+                <span className={styles.hint}>
+                  Podés elegir uno o varios. El primero será el juego principal.
+                </span>
+              </div>
+
+              <div className={styles.modalActions}>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={closeModal}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className={styles.primaryBtn}
+                  disabled={!formName.trim() || formGames.length === 0}
+                >
+                  {editingCommunity ? 'Guardar cambios' : 'Crear comunidad'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
