@@ -2,10 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import styles from '../styles/components/BottomBar.module.css'; // We'll create this CSS module
+import styles from '../styles/components/BottomBar.module.css';
+
+const HIDDEN_ROUTES = ['/', '/login', '/register']; // rutas donde NO mostramos la barra
 
 const BottomBar = () => {
   const pathname = usePathname();
+
+  // Si estamos en una de estas rutas, no renderizar la barra inferior
+  if (HIDDEN_ROUTES.includes(pathname)) {
+    return null;
+  }
 
   return (
     <div className={styles.bottomBar}>
@@ -46,6 +53,33 @@ const BottomBar = () => {
                 fill="currentColor"/>
         </svg>
         <span>Preferencias</span>
+      </Link>
+
+      {/* 👉 Nuevo tab Comunidad */}
+      <Link
+        href="/communities"
+        className={`${styles.navItem} ${pathname === '/communities' ? styles.active : ''}`}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11Z"
+            fill="currentColor"
+          />
+          <path
+            d="M8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11Z"
+            fill="currentColor"
+          />
+          <path
+            d="M8 13C5.33 13 0 14.34 0 17V19H16V17C16 14.34 10.67 13 8 13Z"
+            transform="translate(0 0)"
+            fill="currentColor"
+          />
+          <path
+            d="M16 13C15.65 13 15.26 13.02 14.84 13.06C16.16 13.88 17 15 17 17V19H24V17C24 14.34 18.67 13 16 13Z"
+            fill="currentColor"
+          />
+        </svg>
+        <span>Comunidad</span>
       </Link>
 
       <Link 
