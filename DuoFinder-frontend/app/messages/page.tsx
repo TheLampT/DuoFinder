@@ -540,12 +540,14 @@ const MessagesPage = () => {
               </div>
 
               {selectedMatch.isCommunity ? (
-                <button
-                  className={styles.leaveButton}
-                  onClick={handleLeaveCommunity}
-                >
-                  Salir de la comunidad
-                </button>
+                              <button
+                type="button"
+                className={styles.leaveCommunityBtn}
+                onClick={handleLeaveCommunity}
+              >
+                Salir de la comunidad
+              </button>
+
               ) : (
                 <button
                   className={styles.profileToggle}
