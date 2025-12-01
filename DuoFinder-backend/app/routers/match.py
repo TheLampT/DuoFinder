@@ -227,7 +227,7 @@ def swipe_user(
             UserID1=u_low,
             UserID2=u_high,
             MatchDate=datetime.utcnow(),
-            Status="pending",  # O cualquier valor apropiado como "active", "matched", etc.
+            Status=True,  # O cualquier valor apropiado como "active", "matched", etc.
             IsRanked=match_is_ranked,
         )
         created_now = True
