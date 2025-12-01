@@ -34,21 +34,21 @@ export const useProfiles = () => {
     setError(null);
 
     try {
-      const suggestions = await apiService.getSuggestions(skip, 20);
-      
-      if (suggestions.length === 0) {
+        const suggestions = await apiService.getSuggestions(skip, 20);
+        
+        if (suggestions.length === 0) {
         setHasMore(false);
-      } else {
+        } else {
         const newProfiles = suggestions.map(transformSuggestionToProfile);
         setProfiles(prev => [...prev, ...newProfiles]);
         setSkip(prev => prev + suggestions.length);
-      }
+        }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error loading profiles');
+        setError(err instanceof Error ? err.message : 'Error loading profiles');
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  }, [skip, loading, hasMore]);
+    }, [skip, loading, hasMore]);
 
   // Cargar perfiles iniciales
   useEffect(() => {

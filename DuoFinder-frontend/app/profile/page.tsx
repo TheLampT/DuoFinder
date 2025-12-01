@@ -292,12 +292,12 @@ export default function ProfilePage() {
 
       console.log('Final update data being sent:', updateData);
 
-      const result = await profileService.updateProfile(updateData);
+      const result = await apiService.updateProfile(updateData);
       setOk(result.message || 'Perfil actualizado exitosamente');
       setEditing(false);
       
       // Refresh profile data
-      const updatedProfile = await profileService.getProfile();
+      const updatedProfile = await apiService.getProfile();
       setProfile(updatedProfile);
       
     } catch (err: unknown) {
@@ -311,7 +311,7 @@ export default function ProfilePage() {
 
   function onReset() {
     if (!editing) return;
-    profileService.getProfile().then(setProfile).catch(console.error);
+    apiService.getProfile().then(setProfile).catch(console.error);
     setOk(null);
     setError(null);
   }
