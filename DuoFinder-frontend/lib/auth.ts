@@ -14,6 +14,7 @@ export interface ApiError {
   detail: string;
 }
 
+// Servicios basicos de auth
 export const authService = {
   login: async (email: string, password: string): Promise<LoginResponse> => {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -54,11 +55,10 @@ export const authService = {
   },
 };
 
-// Helper function for authenticated API calls
+// Helper para fetch autenticado
 export const authFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
   const token = authService.getToken();
   
-  // Create headers with proper typing
   const headers = new Headers(options.headers);
   headers.set('Content-Type', 'application/json');
   
@@ -72,7 +72,6 @@ export const authFetch = async (url: string, options: RequestInit = {}): Promise
   });
 
   if (response.status === 401) {
-    // Token expired or invalid
     authService.logout();
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
@@ -81,99 +80,4 @@ export const authFetch = async (url: string, options: RequestInit = {}): Promise
   }
 
   return response;
-};
-
-// Add these interfaces to your existing auth.ts
-export interface UserProfile {
-  username: string;
-  email: string;
-  bio: string;
-  age: number;
-  server?: string;
-  discord?: string;
-  tracker?: string;
-  birthdate?: string;
-  games?: UserGame[];
-}
-
-export interface UserGame {
-  game_id: number;
-  game_name: string;
-  skill_level: string;
-  is_ranked: boolean;
-  game_rank_local_id?: number;
-  rank_name?: string;
-}
-
-export interface UpdateProfileRequest {
-  username?: string;
-  password?: string;
-  bio?: string;
-  server?: string;
-  discord?: string;
-  tracker?: string;
-  birthdate?: string;
-  games?: Array<{
-    game_id?: number;
-    skill_level?: string;
-    is_ranked?: boolean;
-    game_rank_local_id?: number;
-  }>;
-}
-
-export interface UpdateProfileResponse {
-  message: string;
-  new_profile: {
-    username: string;
-    email: string;
-    bio: string;
-    server?: string;
-    discord?: string;
-    tracker?: string;
-    birthdate: string;
-  };
-}
-
-// Add these functions to your authService
-export const profileService = {
-  // Get current user's profile
-  getProfile: async (): Promise<UserProfile> => {
-    const response = await authFetch('/users/me');
-    
-    if (!response.ok) {
-      const errorData: ApiError = await response.json();
-      throw new Error(errorData.detail || 'Failed to fetch profile');
-    }
-
-    return await response.json();
-  },
-
-  // Update user's profile
-  updateProfile: async (profileData: UpdateProfileRequest): Promise<UpdateProfileResponse> => {
-    const response = await authFetch('/users/me', {
-      method: 'PUT',
-      body: JSON.stringify(profileData),
-    });
-
-    if (!response.ok) {
-      const errorData: ApiError = await response.json();
-      throw new Error(errorData.detail || 'Failed to update profile');
-    }
-
-    return await response.json();
-  },
-
-  // Delete user account
-  deleteAccount: async (): Promise<{ message: string }> => {
-    const response = await authFetch('/users/me', {
-      method: 'DELETE',
-    });
-
-    if (!response.ok) {
-      const errorData: ApiError = await response.json();
-      throw new Error(errorData.detail || 'Failed to delete account');
-    }
-
-    return await response.json();
-  },
 };

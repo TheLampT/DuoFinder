@@ -124,3 +124,29 @@
     font-size: 1.1rem;
   }
 }
+
+.bio {
+  color: #666;
+  line-height: 1.4;
+  margin-bottom: 1rem;
+}
+
+.rankedIndicator {
+  margin-left: 2px;
+  font-size: 0.8em;
+}
+
+.noGames {
+  color: #999;
+  font-style: italic;
+}
+
+.interestTag {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.3rem 0.6rem;
+  border-radius: 15px;
+  margin: 0.2rem;
+  font-size: 0.8rem;
+}

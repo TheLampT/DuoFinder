@@ -1,5 +1,5 @@
 import React from 'react';
-import { Profile } from '@/test/mock/mockData';
+import { Profile } from '@/lib/types';
 import styles from '@/styles/components/ProfileDetail.module.css';
 
 interface ProfileDetailProps {

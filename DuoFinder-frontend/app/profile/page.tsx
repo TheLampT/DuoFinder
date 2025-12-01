@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
-import { profileService, UserProfile, UpdateProfileRequest, UserGame } from '../../lib/auth';
+import { apiService } from '@/lib/apiService'; // Cambia esta línea
+import { UserProfile, UpdateProfileRequest, UserGame } from '@/lib/types'; // Y esta línea
 import Image from 'next/image';
 
 // Helpers
@@ -46,7 +47,8 @@ export default function ProfilePage() {
     const loadProfile = async () => {
       try {
         setLoading(true);
-        const userProfile = await profileService.getProfile();
+        // Cambia profileService.getProfile() por apiService.getProfile()
+        const userProfile = await apiService.getProfile();
         console.log('Loaded profile:', userProfile);
         
         // Ensure games have all required fields
@@ -394,11 +396,13 @@ export default function ProfilePage() {
 
       console.log('Final update data being sent:', updateData);
 
-      const result = await profileService.updateProfile(updateData);
+      // Cambia profileService.updateProfile() por apiService.updateProfile()
+      const result = await apiService.updateProfile(updateData);
       setOk(result.message || 'Perfil actualizado exitosamente');
       setEditing(false);
       
-      const updatedProfile = await profileService.getProfile();
+      // Cambia profileService.getProfile() por apiService.getProfile()
+      const updatedProfile = await apiService.getProfile();
       setProfile(updatedProfile);
       
     } catch (err: unknown) {
