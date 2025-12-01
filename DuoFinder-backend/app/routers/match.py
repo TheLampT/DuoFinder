@@ -123,8 +123,6 @@ def get_match_suggestions(
     if is_ranked is not None:
         q = q.filter(UserGamesSkill.IsRanked == is_ranked)
 
-    rows = q.offset(skip).limit(limit).all()
-
     # 5) AGREGAR ORDER BY - Esto soluciona el error
     # Ordenar por ID de usuario para consistencia
     q = q.order_by(User.ID)
