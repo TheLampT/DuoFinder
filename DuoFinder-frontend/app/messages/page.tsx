@@ -41,6 +41,17 @@ interface Match {
   communityId?: number;
 }
 
+// Define tipos para localStorage
+interface JoinedCommunity {
+  id: number;
+  name: string;
+  gameName: string;
+}
+
+interface CommunityMessages {
+  [key: string]: Message[];
+}
+
 const MessagesPage = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
@@ -160,11 +171,10 @@ const MessagesPage = () => {
       let communityMatches: Match[] = [];
       if (typeof window !== 'undefined') {
         const rawJoined = localStorage.getItem('joinedCommunities');
-        const joined: { id: number; name: string; gameName: string }[] =
-          rawJoined ? JSON.parse(rawJoined) : [];
+        const joined: JoinedCommunity[] = rawJoined ? JSON.parse(rawJoined) : [];
 
         const rawMsgs = localStorage.getItem('communityMessages');
-        const allMsgs: Record<string, Message[]> = rawMsgs
+        const allMsgs: CommunityMessages = rawMsgs
           ? JSON.parse(rawMsgs)
           : {};
 
@@ -214,7 +224,7 @@ const MessagesPage = () => {
     if (selectedMatch.isCommunity && selectedMatch.communityId) {
       if (typeof window !== 'undefined') {
         const raw = localStorage.getItem('communityMessages');
-        const all: Record<string, Message[]> = raw ? JSON.parse(raw) : {};
+        const all: CommunityMessages = raw ? JSON.parse(raw) : {};
         const msgs = all[selectedMatch.communityId] || [];
         setMessages(msgs);
       } else {
@@ -293,7 +303,7 @@ const MessagesPage = () => {
     if (selectedMatch.isCommunity && selectedMatch.communityId) {
       if (typeof window !== 'undefined') {
         const raw = localStorage.getItem('communityMessages');
-        const all: Record<string, Message[]> = raw ? JSON.parse(raw) : {};
+        const all: CommunityMessages = raw ? JSON.parse(raw) : {};
         all[selectedMatch.communityId] = updatedMessages;
         localStorage.setItem('communityMessages', JSON.stringify(all));
       }
@@ -323,13 +333,13 @@ const MessagesPage = () => {
     // 1) Sacar de joinedCommunities
     if (typeof window !== 'undefined') {
       const rawJoined = localStorage.getItem('joinedCommunities');
-      const joined = rawJoined ? JSON.parse(rawJoined) : [];
-      const filtered = joined.filter((c: any) => c.id !== communityId);
+      const joined: JoinedCommunity[] = rawJoined ? JSON.parse(rawJoined) : [];
+      const filtered = joined.filter((c) => c.id !== communityId);
       localStorage.setItem('joinedCommunities', JSON.stringify(filtered));
 
       // 2) Borrar historial de mensajes de esa comunidad
       const rawMsgs = localStorage.getItem('communityMessages');
-      const allMsgs: Record<string, Message[]> = rawMsgs
+      const allMsgs: CommunityMessages = rawMsgs
         ? JSON.parse(rawMsgs)
         : {};
       delete allMsgs[communityId];
@@ -540,14 +550,13 @@ const MessagesPage = () => {
               </div>
 
               {selectedMatch.isCommunity ? (
-                              <button
-                type="button"
-                className={styles.leaveCommunityBtn}
-                onClick={handleLeaveCommunity}
-              >
-                Salir de la comunidad
-              </button>
-
+                <button
+                  type="button"
+                  className={styles.leaveCommunityBtn}
+                  onClick={handleLeaveCommunity}
+                >
+                  Salir de la comunidad
+                </button>
               ) : (
                 <button
                   className={styles.profileToggle}

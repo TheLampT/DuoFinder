@@ -20,6 +20,20 @@ interface Community {
   createdBy: string; // 'me' si la creó el usuario
 }
 
+// Define el tipo para los objetos en localStorage
+interface JoinedCommunity {
+  id: number;
+  name: string;
+  gameId: GameId;
+  gameName: string;
+  extraGames?: GameId[];
+  members: number;
+  description: string;
+  logoInitials?: string;
+  logoUrl?: string;
+  createdBy: string;
+}
+
 const CURRENT_USER_ID = 'me';
 
 const MOCK_COMMUNITIES: Community[] = [
@@ -73,7 +87,7 @@ export default function CommunitiesPage() {
     }
 
     try {
-      const parsed = JSON.parse(raw) as any[];
+      const parsed = JSON.parse(raw) as JoinedCommunity[];
 
       // Solo las creadas por mí y que tengan datos de comunidad
       const mine = parsed.filter(
@@ -212,8 +226,8 @@ export default function CommunitiesPage() {
         // Actualizar también en joinedCommunities
         if (typeof window !== 'undefined') {
           const raw = localStorage.getItem('joinedCommunities');
-          const joined = raw ? JSON.parse(raw) : [];
-          const joinedUpdated = joined.map((c: any) =>
+          const joined: JoinedCommunity[] = raw ? JSON.parse(raw) : [];
+          const joinedUpdated = joined.map((c) =>
             c.id === editingCommunity.id
               ? {
                   ...c,
@@ -259,7 +273,7 @@ export default function CommunitiesPage() {
       // 2) Guardar en joinedCommunities (origen compartido con Mensajes)
       if (typeof window !== 'undefined') {
         const raw = localStorage.getItem('joinedCommunities');
-        const joined = raw ? JSON.parse(raw) : [];
+        const joined: JoinedCommunity[] = raw ? JSON.parse(raw) : [];
         joined.push({
           ...newCommunity,
         });
@@ -282,9 +296,9 @@ export default function CommunitiesPage() {
   const handleJoinCommunity = (community: Community) => {
     if (typeof window !== 'undefined') {
       const raw = localStorage.getItem('joinedCommunities');
-      const joined = raw ? JSON.parse(raw) : [];
+      const joined: JoinedCommunity[] = raw ? JSON.parse(raw) : [];
 
-      if (!joined.some((c: any) => c.id === community.id)) {
+      if (!joined.some((c) => c.id === community.id)) {
         joined.push({
           ...community,
           createdBy: community.createdBy || 'system',
@@ -316,8 +330,8 @@ export default function CommunitiesPage() {
 
     if (typeof window !== 'undefined') {
       const raw = localStorage.getItem('joinedCommunities');
-      const joined = raw ? JSON.parse(raw) : [];
-      const filtered = joined.filter((c: any) => c.id !== community.id);
+      const joined: JoinedCommunity[] = raw ? JSON.parse(raw) : [];
+      const filtered = joined.filter((c) => c.id !== community.id);
       localStorage.setItem('joinedCommunities', JSON.stringify(filtered));
     }
   };
@@ -403,7 +417,6 @@ export default function CommunitiesPage() {
           </div>
 
           {/* Columna derecha: lista */}
-          {/* Columna derecha: lista de comunidades */}
           <div className={styles.rightCol}>
             <div className={styles.listHeader}>
               <h2 className={styles.panelTitle}>Comunidades destacadas</h2>
@@ -521,7 +534,6 @@ export default function CommunitiesPage() {
               )}
             </div>
           </div>
-
         </section>
       </div>
 

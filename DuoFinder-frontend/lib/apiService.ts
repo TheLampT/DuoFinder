@@ -5,7 +5,10 @@ import {
   SwipeResponse, 
   SwipeInput,
   UpdateProfileRequest,
-  UpdateProfileResponse 
+  UpdateProfileResponse ,
+  Match ,
+  Chat ,
+  UserPreferences
 } from './types';
 
 export const apiService = {
@@ -83,8 +86,8 @@ export const apiService = {
   },
 
   // === CHAT & MATCHES ===
-  getMatches: async (): Promise<any[]> => {
-    const response = await authFetch('/matches/matches');
+  getMatches: async (): Promise<Match[]> => { // Define el tipo Match
+    const response = await authFetch('/matches');
     
     if (!response.ok) {
       throw new Error('Error fetching matches');
@@ -93,8 +96,8 @@ export const apiService = {
     return response.json();
   },
 
-  getChats: async (): Promise<any[]> => {
-    const response = await authFetch('/chats/chats');
+  getChats: async (): Promise<Chat[]> => { // Define el tipo Chat
+    const response = await authFetch('/chats');
     
     if (!response.ok) {
       throw new Error('Error fetching chats');
@@ -104,7 +107,7 @@ export const apiService = {
   },
 
   // === PREFERENCES ===
-  updatePreferences: async (preferences: any): Promise<any> => {
+  updatePreferences: async (preferences: UserPreferences): Promise<UserPreferences> => { // Define UserPreferences
     const response = await authFetch('/preferences', {
       method: 'PUT',
       body: JSON.stringify(preferences),
@@ -117,7 +120,7 @@ export const apiService = {
     return response.json();
   },
 
-  getPreferences: async (): Promise<any> => {
+  getPreferences: async (): Promise<UserPreferences> => { // Define UserPreferences
     const response = await authFetch('/preferences');
     
     if (!response.ok) {

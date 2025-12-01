@@ -123,3 +123,27 @@ export interface LoginCredentials {
 export interface ApiError {
   detail: string;
 }
+
+export interface Match {
+  id: number;
+  user_id: number;
+  username: string;
+  // ... otras propiedades
+}
+
+export interface Chat {
+  id: number;
+  match_id: number;
+  content: string;
+  // ... otras propiedades
+}
+
+export interface UserPreferences {
+  server?: string;
+  is_ranked?: boolean;
+  age_range?: {
+    min: number;
+    max: number;
+  };
+  // ... otras preferencias
+}
