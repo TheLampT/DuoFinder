@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
-import { apiService } from '@/lib/apiService'; // Cambia esta línea
-import { UserProfile, UpdateProfileRequest, UserGame } from '@/lib/types'; // Y esta línea
+import { apiService } from '@/lib/apiService';
+import { UserProfile, UpdateProfileRequest, UserGame } from '@/lib/types';
 import Image from 'next/image';
 
 // Helpers
@@ -29,6 +29,32 @@ interface ApiGame {
   }>;
 }
 
+// Avatares fijos (solo frontend, se guardan en localStorage)
+const AVATAR_STORAGE_KEY = 'duofinder_profile_avatar';
+
+const PRESET_AVATARS = [
+  {
+    id: 'laptop',
+    url: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 'keyboard',
+    url: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 'controller',
+    url: 'https://images.unsplash.com/photo-1592841200221-a6898f307baa?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 'setup',
+    url: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 'arcade',
+    url: 'https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=800&q=80',
+  },
+];
+
 export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -40,35 +66,38 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Avatar local (solo frontend)
+  const [avatarId, setAvatarId] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
-  // Load profile from API
+  // Cargar perfil desde API
   useEffect(() => {
     const loadProfile = async () => {
       try {
         setLoading(true);
-        // Cambia profileService.getProfile() por apiService.getProfile()
         const userProfile = await apiService.getProfile();
         console.log('Loaded profile:', userProfile);
-        
-        // Ensure games have all required fields
+
         if (userProfile.games) {
-          userProfile.games = userProfile.games.map(game => ({
+          userProfile.games = userProfile.games.map((game) => ({
             ...game,
             skill_level: game.skill_level || '',
             game_rank_local_id: game.game_rank_local_id || 0,
-            rank_name: game.rank_name || ''
+            rank_name: game.rank_name || '',
           }));
         }
-        
+
         setProfile(userProfile);
       } catch (err: unknown) {
         console.error('Failed to load profile:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load profile';
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to load profile';
         setError(errorMessage);
-        
-        // If unauthorized, redirect to login
-        if (errorMessage.includes('Authentication') || errorMessage.includes('401')) {
+
+        if (
+          errorMessage.includes('Authentication') ||
+          errorMessage.includes('401')
+        ) {
           router.push('/login');
         }
       } finally {
@@ -79,6 +108,20 @@ export default function ProfilePage() {
     loadProfile();
   }, [router]);
 
+  // Cargar avatar desde localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(AVATAR_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { id: string | null; url: string | null };
+      setAvatarId(parsed.id ?? null);
+      setAvatarUrl(parsed.url ?? null);
+    } catch {
+      // ignorar errores de parseo
+    }
+  }, []);
+
   useEffect(() => {
     console.log('Profile updated:', profile);
   }, [profile]);
@@ -87,7 +130,7 @@ export default function ProfilePage() {
     console.log('Available games updated:', availableGames);
   }, [availableGames]);
 
-  // Load available games when entering edit mode
+  // Cargar juegos disponibles al entrar en modo edición
   const loadAvailableGames = async () => {
     try {
       setLoadingGames(true);
@@ -99,7 +142,10 @@ export default function ProfilePage() {
       setAvailableGames(games);
     } catch (err: unknown) {
       console.error('Failed to load games:', err);
-      const errorMessage = err instanceof Error ? err.message : 'No se pudieron cargar los juegos disponibles.';
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'No se pudieron cargar los juegos disponibles.';
       setError(errorMessage);
     } finally {
       setLoadingGames(false);
@@ -118,45 +164,46 @@ export default function ProfilePage() {
   }
 
   // Update game rank
-  function updateGameRank(gameId: number, rankName: string, localRankId: number) {
+  function updateGameRank(
+    gameId: number,
+    rankName: string,
+    localRankId: number
+  ) {
     if (!profile || !editing) return;
-    
-    console.log('updateGameRank called:', { gameId, rankName, localRankId });
-    
-    setProfile(prev => {
+
+    setProfile((prev) => {
       if (!prev?.games) return prev;
-      
-      const updatedGames = prev.games.map(game => {
+
+      const updatedGames = prev.games.map((game) => {
         if (game.game_id === gameId) {
-          const updatedGame = { 
-            ...game, 
+          return {
+            ...game,
             rank_name: rankName,
-            game_rank_local_id: localRankId
+            game_rank_local_id: localRankId,
           };
-          console.log('Updating game:', { old: game, new: updatedGame });
-          return updatedGame;
         }
         return game;
       });
-      
-      console.log('New games array:', updatedGames);
+
       return { ...prev, games: updatedGames };
     });
   }
 
   function updateGameSkillLevel(gameId: number, skillLevel: string) {
     if (!profile || !editing) return;
-    
-    setProfile(prev => {
+
+    setProfile((prev) => {
       if (!prev?.games) return prev;
-      
-      const updatedGames = prev.games.map(game => 
-        game.game_id === gameId ? { 
-          ...game, 
-          skill_level: skillLevel 
-        } : game
+
+      const updatedGames = prev.games.map((game) =>
+        game.game_id === gameId
+          ? {
+              ...game,
+              skill_level: skillLevel,
+            }
+          : game
       );
-      
+
       return { ...prev, games: updatedGames };
     });
   }
@@ -164,12 +211,11 @@ export default function ProfilePage() {
   // Add a new game to profile
   function addGame(gameId: number) {
     if (!profile || !editing) return;
-    
-    const gameOption = availableGames.find(g => g.id === gameId);
+
+    const gameOption = availableGames.find((g) => g.id === gameId);
     if (!gameOption) return;
 
-    // Check if game already exists
-    if (profile.games?.some(g => g.game_id === gameId)) {
+    if (profile.games?.some((g) => g.game_id === gameId)) {
       console.log('Game already exists:', gameId);
       return;
     }
@@ -178,91 +224,91 @@ export default function ProfilePage() {
     const newGame: UserGame = {
       game_id: gameId,
       game_name: gameOption.name,
-      skill_level: "", // Start with empty skill level
-      is_ranked: false, // Default to non-ranked
-      game_rank_local_id: undefined, // Don't set rank ID initially for non-ranked
-      rank_name: defaultRank?.rank_name || 'Unranked'
+      skill_level: '',
+      is_ranked: false,
+      game_rank_local_id: undefined,
+      rank_name: defaultRank?.rank_name || 'Unranked',
     };
 
-    console.log('Adding new game:', newGame);
-
-    setProfile(prev => ({
+    setProfile((prev) => ({
       ...prev!,
-      games: [...(prev?.games || []), newGame]
+      games: [...(prev?.games || []), newGame],
     }));
   }
 
   // Toggle ranked status for a game
   function toggleRanked(gameId: number) {
     if (!profile || !editing) return;
-    
-    setProfile(prev => {
+
+    setProfile((prev) => {
       if (!prev?.games) return prev;
-      
-      const updatedGames = prev.games.map(game => {
+
+      const updatedGames = prev.games.map((game) => {
         if (game.game_id === gameId) {
           const newIsRanked = !game.is_ranked;
-          
+
           if (newIsRanked) {
-            // Switching to ranked - set default rank if not set
-            const gameData = availableGames.find(g => g.id === gameId);
+            const gameData = availableGames.find((g) => g.id === gameId);
             const defaultRank = gameData?.ranks[0];
-            
+
             return {
               ...game,
               is_ranked: newIsRanked,
-              game_rank_local_id: game.game_rank_local_id || defaultRank?.local_rank_id || 0,
-              rank_name: game.rank_name || defaultRank?.rank_name || 'Unranked',
-              // Keep existing skill_level or set to rank name
-              skill_level: game.skill_level || defaultRank?.rank_name || ''
+              game_rank_local_id:
+                game.game_rank_local_id || defaultRank?.local_rank_id || 0,
+              rank_name:
+                game.rank_name || defaultRank?.rank_name || 'Unranked',
+              skill_level: game.skill_level || defaultRank?.rank_name || '',
             };
           } else {
-            // Switching to non-ranked - clear rank data but keep skill_level
             return {
               ...game,
               is_ranked: newIsRanked,
               game_rank_local_id: undefined,
-              rank_name: undefined
-              // skill_level remains as is
+              rank_name: undefined,
             };
           }
         }
         return game;
       });
-      
+
       return { ...prev, games: updatedGames };
     });
   }
 
-  // Avatar handlers
-  function pickAvatar() { if (editing) fileInputRef.current?.click(); }
-  function onAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
-    console.log('Image upload would be implemented here');
-    e.currentTarget.value = '';
-  }
-  function removeAvatar() { 
-    if (editing) {
-      console.log('Avatar removal would be implemented here');
+  // Selección de avatar (solo frontend)
+  function selectAvatar(avatar: { id: string; url: string } | null) {
+    if (!editing) return;
+
+    const newId = avatar?.id ?? null;
+    const newUrl = avatar?.url ?? null;
+
+    setAvatarId(newId);
+    setAvatarUrl(newUrl);
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(
+        AVATAR_STORAGE_KEY,
+        JSON.stringify({ id: newId, url: newUrl })
+      );
     }
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!editing || !profile) return;
-    
+
     setOk(null);
     setError(null);
-    
-    if (!profile.username.trim()) return setError('Ingresá un nombre de usuario.');
+
+    if (!profile.username.trim())
+      return setError('Ingresá un nombre de usuario.');
     if (!profile.email.trim()) return setError('Ingresá tu email.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) return setError('Email inválido.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email))
+      return setError('Email inválido.');
 
     try {
       setSaving(true);
-
-      // Debug: Check current state
-      console.log('Current profile state:', profile);
-      console.log('Current games:', profile.games);
 
       const updateData: UpdateProfileRequest = {
         username: profile.username,
@@ -270,39 +316,36 @@ export default function ProfilePage() {
         discord: profile.discord || '',
         server: profile.server || '',
         tracker: profile.tracker || '',
-        games: profile.games?.map(game => {
-          // Only include game_rank_local_id for ranked games
+        games: profile.games?.map((game) => {
           const baseData = {
             game_id: game.game_id,
             skill_level: game.skill_level || '',
-            is_ranked: game.is_ranked
+            is_ranked: game.is_ranked,
           };
 
-          // Add rank data only for ranked games
           if (game.is_ranked && game.game_rank_local_id) {
             return {
               ...baseData,
-              game_rank_local_id: game.game_rank_local_id
+              game_rank_local_id: game.game_rank_local_id,
             };
           }
 
           return baseData;
-        })
+        }),
       };
-
-      console.log('Final update data being sent:', updateData);
 
       const result = await apiService.updateProfile(updateData);
       setOk(result.message || 'Perfil actualizado exitosamente');
       setEditing(false);
-      
-      // Refresh profile data
+
       const updatedProfile = await apiService.getProfile();
       setProfile(updatedProfile);
-      
     } catch (err: unknown) {
       console.error('Failed to update profile:', err);
-      const errorMessage = err instanceof Error ? err.message : 'No se pudieron guardar los cambios.';
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'No se pudieron guardar los cambios.';
       setError(errorMessage);
     } finally {
       setSaving(false);
@@ -311,17 +354,20 @@ export default function ProfilePage() {
 
   function onReset() {
     if (!editing) return;
-    apiService.getProfile().then(setProfile).catch(console.error);
+    apiService
+      .getProfile()
+      .then(setProfile)
+      .catch(console.error);
     setOk(null);
     setError(null);
   }
 
   function removeGame(gameId: number) {
     if (!profile || !editing) return;
-    
-    setProfile(prev => ({
+
+    setProfile((prev) => ({
       ...prev!,
-      games: prev?.games?.filter(g => g.game_id !== gameId) || []
+      games: prev?.games?.filter((g) => g.game_id !== gameId) || [],
     }));
   }
 
@@ -336,7 +382,11 @@ export default function ProfilePage() {
   }
 
   if (loading) {
-    return <div className={styles.page}><div className={styles.card}>Cargando…</div></div>;
+    return (
+      <div className={styles.page}>
+        <div className={styles.card}>Cargando…</div>
+      </div>
+    );
   }
 
   if (!profile) {
@@ -344,31 +394,35 @@ export default function ProfilePage() {
       <div className={styles.page}>
         <div className={styles.card}>
           <div className={styles.alertError}>
-            Error al cargar el perfil. <button onClick={() => window.location.reload()}>Reintentar</button>
+            Error al cargar el perfil.{' '}
+            <button onClick={() => window.location.reload()}>Reintentar</button>
           </div>
         </div>
       </div>
     );
   }
 
-  const selectedGameIds = new Set(profile.games?.map(g => g.game_id.toString()) ?? []);
-  const availableGamesToAdd = availableGames.filter(game => !selectedGameIds.has(game.id.toString()));
+  const selectedGameIds = new Set(
+    profile.games?.map((g) => g.game_id.toString()) ?? []
+  );
+  const availableGamesToAdd = availableGames.filter(
+    (game) => !selectedGameIds.has(game.id.toString())
+  );
 
   const handleSaveClick = async (): Promise<void> => {
     if (!editing || !profile) return;
-    
+
     setOk(null);
     setError(null);
-    
-    if (!profile.username.trim()) return setError('Ingresá un nombre de usuario.');
+
+    if (!profile.username.trim())
+      return setError('Ingresá un nombre de usuario.');
     if (!profile.email.trim()) return setError('Ingresá tu email.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) return setError('Email inválido.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email))
+      return setError('Email inválido.');
 
     try {
       setSaving(true);
-
-      console.log('Current profile state:', profile);
-      console.log('Current games:', profile.games);
 
       const updateData: UpdateProfileRequest = {
         username: profile.username,
@@ -376,43 +430,45 @@ export default function ProfilePage() {
         discord: profile.discord || '',
         server: profile.server || '',
         tracker: profile.tracker || '',
-        games: profile.games?.map(game => {
+        games: profile.games?.map((game) => {
           const baseData = {
             game_id: game.game_id,
             skill_level: game.skill_level || '',
-            is_ranked: game.is_ranked
+            is_ranked: game.is_ranked,
           };
 
           if (game.is_ranked && game.game_rank_local_id) {
             return {
               ...baseData,
-              game_rank_local_id: game.game_rank_local_id
+              game_rank_local_id: game.game_rank_local_id,
             };
           }
 
           return baseData;
-        })
+        }),
       };
 
-      console.log('Final update data being sent:', updateData);
-
-      // Cambia profileService.updateProfile() por apiService.updateProfile()
       const result = await apiService.updateProfile(updateData);
       setOk(result.message || 'Perfil actualizado exitosamente');
       setEditing(false);
-      
-      // Cambia profileService.getProfile() por apiService.getProfile()
+
       const updatedProfile = await apiService.getProfile();
       setProfile(updatedProfile);
-      
     } catch (err: unknown) {
       console.error('Failed to update profile:', err);
-      const errorMessage = err instanceof Error ? err.message : 'No se pudieron guardar los cambios.';
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'No se pudieron guardar los cambios.';
       setError(errorMessage);
     } finally {
       setSaving(false);
     }
   };
+
+  const initialLetter = (profile.username || 'U')
+    .substring(0, 1)
+    .toUpperCase();
 
   return (
     <div className={styles.page}>
@@ -421,27 +477,42 @@ export default function ProfilePage() {
         <header className={styles.hero}>
           <div
             className={styles.heroBg}
-            style={{ backgroundImage: "url(https://images.unsplash.com/photo-1535223289827-42f1e9919769?q=80&w=1600&auto=format&fit=crop)" }}
+            style={{
+              backgroundImage:
+                'url(https://images.unsplash.com/photo-1535223289827-42f1e9919769?q=80&w=1600&auto=format&fit=crop)',
+            }}
           />
           <div className={styles.heroOverlay} />
           <div className={styles.heroContent}>
-            <Image 
-              src="/favicon.ico" 
-              alt="DuoFinder" 
-              width={40}  // adjust as needed
-              height={40} // adjust as needed
+            <Image
+              src="/favicon.ico"
+              alt="DuoFinder"
+              width={40}
+              height={40}
               className={styles.heroLogo}
             />
             <h1 className={styles.title}>Mi Perfil</h1>
             <p className={styles.heroSub}>
-              Personalizá tu perfil para encontrar el dúo ideal. Recordá guardar los cambios antes de salir!
+              Personalizá tu perfil para encontrar el dúo ideal. Recordá
+              guardar los cambios antes de salir!
             </p>
             <div className={styles.heroBadges}>
-              <span className={`${styles.badge} ${styles.badgePrimary}`}>Activo</span>
-              {profile.age && <span className={styles.badge}>{profile.age} años</span>}
-              {profile.server && <span className={styles.badge}>Servidor: {profile.server}</span>}
+              <span className={`${styles.badge} ${styles.badgePrimary}`}>
+                Activo
+              </span>
+              {profile.age && (
+                <span className={styles.badge}>{profile.age} años</span>
+              )}
+              {profile.server && (
+                <span className={styles.badge}>
+                  Servidor: {profile.server}
+                </span>
+              )}
               {profile.games && profile.games.length > 0 && (
-                <span className={styles.badge}>{profile.games.length} juego{profile.games.length !== 1 ? 's' : ''}</span>
+                <span className={styles.badge}>
+                  {profile.games.length} juego
+                  {profile.games.length !== 1 ? 's' : ''}
+                </span>
               )}
             </div>
           </div>
@@ -452,27 +523,38 @@ export default function ProfilePage() {
 
         {/* Barra de edición */}
         <div className={styles.editBar}>
-          <span className={`${styles.modeTag} ${editing ? styles.modeEdit : ''}`}>
+          <span
+            className={`${styles.modeTag} ${
+              editing ? styles.modeEdit : ''
+            }`}
+          >
             {editing ? 'Editando' : 'Solo lectura'}
           </span>
           <div className={styles.editActions}>
             {!editing ? (
-              <button type="button" className={styles.btn} onClick={handleEditClick}>
+              <button
+                type="button"
+                className={styles.btn}
+                onClick={handleEditClick}
+              >
                 Editar perfil
               </button>
             ) : (
               <>
-                <button 
-                  type="button" 
-                  className={`${styles.btn} ${styles.btnOutline}`} 
-                  onClick={() => { onReset(); setEditing(false); }}
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnOutline}`}
+                  onClick={() => {
+                    onReset();
+                    setEditing(false);
+                  }}
                 >
                   Cancelar
                 </button>
-                <button 
-                  type="button" 
-                  className={styles.btn} 
-                  onClick={handleSaveClick} 
+                <button
+                  type="button"
+                  className={styles.btn}
+                  onClick={handleSaveClick}
                   disabled={saving}
                 >
                   {saving ? 'Guardando…' : 'Guardar'}
@@ -491,37 +573,54 @@ export default function ProfilePage() {
               <h3 className={styles.sectionTitle}>Avatar</h3>
               <div className={styles.avatarWrap}>
                 <div className={styles.avatar}>
-                  <div className={styles.avatarInitial}>
-                    {(profile.username || 'U').substring(0, 1).toUpperCase()}
-                  </div>
+                  {avatarUrl ? (
+                    <Image
+                      src={avatarUrl}
+                      alt="Avatar seleccionado"
+                      width={96}
+                      height={96}
+                    />
+                  ) : (
+                    <div className={styles.avatarInitial}>{initialLetter}</div>
+                  )}
                 </div>
-                <div>
-                  <div className={styles.avatarActions}>
-                    <button 
-                      type="button" 
-                      className={styles.avatarBtn} 
-                      onClick={pickAvatar} 
+                <div className={styles.avatarChooser}>
+                  <p className={styles.avatarText}>
+                    Elegí uno de los avatares predeterminados. Se guarda solo
+                    en esta versión de la app.
+                  </p>
+                  <div className={styles.avatarOptions}>
+                    {PRESET_AVATARS.map((avatar) => (
+                      <button
+                        key={avatar.id}
+                        type="button"
+                        className={`${styles.avatarOption} ${
+                          avatarId === avatar.id
+                            ? styles.avatarOptionSelected
+                            : ''
+                        }`}
+                        onClick={() => selectAvatar(avatar)}
+                        disabled={!editing}
+                      >
+                        <Image
+                          src={avatar.url}
+                          alt={avatar.id}
+                          width={48}
+                          height={48}
+                        />
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className={`${styles.avatarOption} ${
+                        !avatarId ? styles.avatarOptionSelected : ''
+                      }`}
+                      onClick={() => selectAvatar(null)}
                       disabled={!editing}
                     >
-                      Cambiar
-                    </button>
-                    <button 
-                      type="button" 
-                      className={styles.avatarBtn} 
-                      onClick={removeAvatar} 
-                      disabled={!editing}
-                    >
-                      Quitar
+                      <span className={styles.avatarNone}>Sin avatar</span>
                     </button>
                   </div>
-                  <div className={styles.hint}>Recomendado: 512×512 px (JPG/PNG)</div>
-                  <input
-                    ref={fileInputRef}
-                    className={styles.fileInput}
-                    type="file"
-                    accept="image/png,image/jpeg"
-                    onChange={onAvatarFile}
-                  />
                 </div>
               </div>
             </div>
@@ -530,27 +629,31 @@ export default function ProfilePage() {
             <div className={styles.section}>
               <div className={styles.row2}>
                 <div className={styles.field}>
-                  <label className={styles.label} htmlFor="username">Usuario</label>
-                  <input 
-                    id="username" 
-                    className={styles.input} 
+                  <label className={styles.label} htmlFor="username">
+                    Usuario
+                  </label>
+                  <input
+                    id="username"
+                    className={styles.input}
                     type="text"
                     placeholder="Tu nick"
-                    value={profile.username} 
+                    value={profile.username}
                     onChange={(e) => onChange('username', e.target.value)}
-                    maxLength={32} 
+                    maxLength={32}
                     disabled={!editing}
                   />
                 </div>
                 <div className={styles.field}>
-                  <label className={styles.label} htmlFor="email">Email</label>
-                  <input 
-                    id="email" 
-                    className={styles.input} 
+                  <label className={styles.label} htmlFor="email">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    className={styles.input}
                     type="email"
                     autoComplete="email"
                     placeholder="tu@correo.com"
-                    value={profile.email} 
+                    value={profile.email}
                     onChange={(e) => onChange('email', e.target.value)}
                     disabled={!editing}
                   />
@@ -558,38 +661,44 @@ export default function ProfilePage() {
               </div>
               <div className={styles.row2}>
                 <div className={styles.field}>
-                  <label className={styles.label} htmlFor="discord">Discord</label>
-                  <input 
-                    id="discord" 
-                    className={styles.input} 
-                    type="text" 
+                  <label className={styles.label} htmlFor="discord">
+                    Discord
+                  </label>
+                  <input
+                    id="discord"
+                    className={styles.input}
+                    type="text"
                     placeholder="usuario#1234"
-                    value={profile.discord || ''} 
+                    value={profile.discord || ''}
                     onChange={(e) => onChange('discord', e.target.value)}
                     disabled={!editing}
                   />
                 </div>
                 <div className={styles.field}>
-                  <label className={styles.label} htmlFor="server">Servidor</label>
-                  <input 
-                    id="server" 
-                    className={styles.input} 
-                    type="text" 
+                  <label className={styles.label} htmlFor="server">
+                    Servidor
+                  </label>
+                  <input
+                    id="server"
+                    className={styles.input}
+                    type="text"
                     placeholder="Ej: LAS, NA, EU"
-                    value={profile.server || ''} 
+                    value={profile.server || ''}
                     onChange={(e) => onChange('server', e.target.value)}
                     disabled={!editing}
                   />
                 </div>
               </div>
               <div className={styles.field}>
-                <label className={styles.label} htmlFor="tracker">Tracker</label>
-                <input 
-                  id="tracker" 
-                  className={styles.input} 
-                  type="text" 
+                <label className={styles.label} htmlFor="tracker">
+                  Tracker
+                </label>
+                <input
+                  id="tracker"
+                  className={styles.input}
+                  type="text"
                   placeholder="https://tracker.gg/valorant"
-                  value={profile.tracker || ''} 
+                  value={profile.tracker || ''}
                   onChange={(e) => onChange('tracker', e.target.value)}
                   disabled={!editing}
                 />
@@ -599,37 +708,45 @@ export default function ProfilePage() {
             {/* Bio */}
             <div className={styles.section}>
               <div className={styles.field}>
-                <label className={styles.label} htmlFor="bio">Bio</label>
-                <textarea 
-                  id="bio" 
-                  className={styles.textarea} 
-                  rows={4} 
+                <label className={styles.label} htmlFor="bio">
+                  Bio
+                </label>
+                <textarea
+                  id="bio"
+                  className={styles.textarea}
+                  rows={4}
                   maxLength={3000}
-                  value={profile.bio || ''} 
+                  value={profile.bio || ''}
                   onChange={(e) => onChange('bio', e.target.value)}
-                  placeholder="Contá brevemente qué buscás…" 
+                  placeholder="Contá brevemente qué buscás…"
                   disabled={!editing}
                 />
-                <div className={styles.counter}>{(profile.bio || '').length}/3000</div>
+                <div className={styles.counter}>
+                  {(profile.bio || '').length}/3000
+                </div>
               </div>
             </div>
 
             {/* Acciones */}
             <div className={styles.actions}>
-              <button className={styles.btn} type="submit" disabled={!editing || saving}>
+              <button
+                className={styles.btn}
+                type="submit"
+                disabled={!editing || saving}
+              >
                 {saving ? 'Guardando…' : 'Guardar cambios'}
               </button>
-              <button 
-                className={`${styles.btn} ${styles.btnOutline}`} 
-                type="button" 
-                onClick={onReset} 
+              <button
+                className={`${styles.btn} ${styles.btnOutline}`}
+                type="button"
+                onClick={onReset}
                 disabled={!editing}
               >
                 Deshacer cambios
               </button>
-              <button 
-                className={`${styles.btn} ${styles.btnOutline}`} 
-                type="button" 
+              <button
+                className={`${styles.btn} ${styles.btnOutline}`}
+                type="button"
                 onClick={onLogout}
               >
                 Cerrar sesión
@@ -642,19 +759,43 @@ export default function ProfilePage() {
             {/* PREVIEW */}
             <div className={`${styles.previewCard} ${styles.sticky}`}>
               <div className={styles.previewTop}>
-                <div className={`${styles.previewImg} ${styles.previewFallback}`}>
-                  {(profile.username || 'U').substring(0, 1).toUpperCase()}
-                </div>
+                {avatarUrl ? (
+                  <Image
+                    src={avatarUrl}
+                    alt="Avatar preview"
+                    fill
+                    className={styles.previewImg}
+                  />
+                ) : (
+                  <div
+                    className={`${styles.previewImg} ${styles.previewFallback}`}
+                  >
+                    {initialLetter}
+                  </div>
+                )}
               </div>
               <div className={styles.previewInfo}>
                 <h3 className={styles.previewTitle}>
-                  {profile.username || 'Usuario'}{profile.age ? `, ${profile.age}` : ''}
+                  {profile.username || 'Usuario'}
+                  {profile.age ? `, ${profile.age}` : ''}
                 </h3>
-                <p className={styles.previewBio}>{truncate(profile.bio || 'Sin bio por ahora.')}</p>
+                <p className={styles.previewBio}>
+                  {truncate(profile.bio || 'Sin bio por ahora.')}
+                </p>
                 <div className={styles.previewPills}>
-                  <span className={`${styles.pill} ${styles.pillPrimary}`}>Activo</span>
-                  {profile.discord && <span className={styles.pill}>Discord: {profile.discord}</span>}
-                  {profile.server && <span className={styles.pill}>Servidor: {profile.server}</span>}
+                  <span className={`${styles.pill} ${styles.pillPrimary}`}>
+                    Activo
+                  </span>
+                  {profile.discord && (
+                    <span className={styles.pill}>
+                      Discord: {profile.discord}
+                    </span>
+                  )}
+                  {profile.server && (
+                    <span className={styles.pill}>
+                      Servidor: {profile.server}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -667,7 +808,9 @@ export default function ProfilePage() {
                 <div className={styles.section}>
                   <h3 className={styles.sectionTitle}>Agregar Juegos</h3>
                   {loadingGames ? (
-                    <p className={styles.hint}>Cargando juegos disponibles...</p>
+                    <p className={styles.hint}>
+                      Cargando juegos disponibles...
+                    </p>
                   ) : (
                     <>
                       <div className={styles.chips}>
@@ -683,7 +826,10 @@ export default function ProfilePage() {
                         ))}
                       </div>
                       {availableGamesToAdd.length === 0 && (
-                        <p className={styles.hint}>Ya tenés todos los juegos disponibles agregados a tu perfil.</p>
+                        <p className={styles.hint}>
+                          Ya tenés todos los juegos disponibles agregados a tu
+                          perfil.
+                        </p>
                       )}
                     </>
                   )}
@@ -693,15 +839,18 @@ export default function ProfilePage() {
               {(profile.games?.length ?? 0) > 0 ? (
                 <div className={styles.ranks}>
                   {(profile.games ?? []).map((game) => {
-                    const gameData = availableGames.find(g => g.id === game.game_id);
+                    const gameData = availableGames.find(
+                      (g) => g.id === game.game_id
+                    );
                     const ranks = gameData?.ranks || [];
-                    
+
                     return (
                       <div key={game.game_id} className={styles.rankRow}>
-                        <span className={styles.rankLabel}>{game.game_name}</span>
+                        <span className={styles.rankLabel}>
+                          {game.game_name}
+                        </span>
                         {editing ? (
                           <>
-                            {/* Ranked Checkbox */}
                             <label className={styles.rankCheckbox}>
                               <input
                                 type="checkbox"
@@ -711,41 +860,54 @@ export default function ProfilePage() {
                               <span>Ranked</span>
                             </label>
 
-                            {/* Conditional Rendering based on is_ranked */}
                             {game.is_ranked ? (
-                              // Rank Dropdown (when ranked)
                               <select
                                 className={styles.rankSelect}
                                 value={game.rank_name || ''}
                                 onChange={(e) => {
                                   const selectedRankName = e.target.value;
-                                  const selectedRank = ranks.find(r => r.rank_name === selectedRankName);
+                                  const selectedRank = ranks.find(
+                                    (r) => r.rank_name === selectedRankName
+                                  );
                                   if (selectedRank) {
-                                    updateGameRank(game.game_id, selectedRank.rank_name, selectedRank.local_rank_id);
-                                  } else {
-                                    console.error('No rank found for name:', selectedRankName);
+                                    updateGameRank(
+                                      game.game_id,
+                                      selectedRank.rank_name,
+                                      selectedRank.local_rank_id
+                                    );
                                   }
                                 }}
                               >
                                 {ranks.map((rank) => (
-                                  <option key={rank.local_rank_id} value={rank.rank_name}>
+                                  <option
+                                    key={rank.local_rank_id}
+                                    value={rank.rank_name}
+                                  >
                                     {rank.rank_name}
                                   </option>
                                 ))}
                                 {ranks.length === 0 && (
-                                  <option value={game.rank_name || game.skill_level}>
+                                  <option
+                                    value={
+                                      game.rank_name || game.skill_level
+                                    }
+                                  >
                                     {game.rank_name || game.skill_level}
                                   </option>
                                 )}
                               </select>
                             ) : (
-                              // Skill Level Input (when not ranked)
                               <input
                                 type="text"
                                 className={styles.input}
                                 placeholder="Nivel de habilidad (ej: Casual, Principiante)"
                                 value={game.skill_level || ''}
-                                onChange={(e) => updateGameSkillLevel(game.game_id, e.target.value)}
+                                onChange={(e) =>
+                                  updateGameSkillLevel(
+                                    game.game_id,
+                                    e.target.value
+                                  )
+                                }
                                 maxLength={50}
                               />
                             )}
@@ -759,10 +921,11 @@ export default function ProfilePage() {
                             </button>
                           </>
                         ) : (
-                          // Read-only view
                           <>
                             <span className={styles.rankSelect}>
-                              {game.is_ranked ? game.rank_name : game.skill_level} 
+                              {game.is_ranked
+                                ? game.rank_name
+                                : game.skill_level}
                               {game.is_ranked ? ' ⚡' : ''}
                             </span>
                           </>
@@ -773,20 +936,25 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <p className={styles.hint}>
-                  {editing 
-                    ? 'Agregá juegos usando los botones de la izquierda.' 
-                    : 'Todavía no agregaste juegos a tu perfil.'
-                  }
+                  {editing
+                    ? 'Agregá juegos usando los botones de la izquierda.'
+                    : 'Todavía no agregaste juegos a tu perfil.'}
                 </p>
               )}
 
-              {/* Available games chips (read-only when not editing) */}
               {!editing && availableGames.length > 0 && (
-                <div className={styles.chips} style={{ marginTop: '12px', opacity: 0.6 }}>
+                <div
+                  className={styles.chips}
+                  style={{ marginTop: '12px', opacity: 0.6 }}
+                >
                   {availableGames.map((game) => (
                     <span
                       key={game.id}
-                      className={`${styles.chip} ${selectedGameIds.has(game.id.toString()) ? styles.chipSelected : ''}`}
+                      className={`${styles.chip} ${
+                        selectedGameIds.has(game.id.toString())
+                          ? styles.chipSelected
+                          : ''
+                      }`}
                     >
                       {game.name}
                     </span>
@@ -796,7 +964,9 @@ export default function ProfilePage() {
             </section>
 
             <div className={styles.noteReadOnly}>
-              {editing ? 'Estás editando tu perfil.' : 'Tocá "Editar perfil" para modificar tus datos.'}
+              {editing
+                ? 'Estás editando tu perfil.'
+                : 'Tocá "Editar perfil" para modificar tus datos.'}
             </div>
           </aside>
         </div>
