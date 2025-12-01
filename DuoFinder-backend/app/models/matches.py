@@ -10,7 +10,7 @@ class Matches(Base):
     UserID1 = Column(Integer, ForeignKey("dbo.User.ID"), nullable=False, index=True)
     UserID2 = Column(Integer, ForeignKey("dbo.User.ID"), nullable=False, index=True)
     MatchDate = Column(DateTime, nullable=True)
-    Status = Column(String(50), nullable=True)
+    Status = Column(String(50), nullable=False)
     IsRanked = Column(Boolean, nullable=True)
 
     user1 = relationship("User", foreign_keys=[UserID1], back_populates="matches_as_user1", lazy="joined")
