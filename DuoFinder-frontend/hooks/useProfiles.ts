@@ -62,7 +62,7 @@ export const useProfiles = () => {
     try {
       // Encontrar el juego principal (puedes mejorar esta lógica)
       const profile = profiles.find(p => p.id === profileId);
-      const mainGameId = profile?.gameSkill[0] ? 1 : undefined; // Esto es un ejemplo, ajusta según tu lógica
+      const mainGameId = profile?.gameSkill[0] ? 1 : undefined;
       
       const result = await apiService.swipeUser({
         target_user_id: profileId,
