@@ -217,22 +217,35 @@ def swipe_user(
     # ---- obtener/crear fila canónica ----
     row = db.query(Matches).filter(Matches.UserID1 == u_low, Matches.UserID2 == u_high).first()
     created_now = False
+    
     if not row:
-        row = Matches(
-            UserID1=u_low,
-            UserID2=u_high,
-            MatchDate=datetime.utcnow(),
-            IsRanked=match_is_ranked,
-            # GameID=selected_game_id,  # si tenés la columna
-        )
-        db.add(row)
         try:
+            row = Matches(
+                UserID1=u_low,
+                UserID2=u_high,
+                MatchDate=datetime.utcnow(),
+                IsRanked=match_is_ranked,
+            )
+            db.add(row)
             db.flush()
             created_now = True
         except IntegrityError:
-            # carrera: otra instancia insertó; recuperar
+            # Race condition: otra request ya creó el registro
             db.rollback()
             row = db.query(Matches).filter(Matches.UserID1 == u_low, Matches.UserID2 == u_high).first()
+            # SI row sigue siendo None, hay un problema más serio
+            if not row:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Error al crear o recuperar el match. Intente nuevamente."
+                )
+
+    # ---- VERIFICAR que row no sea None antes de acceder a sus atributos ----
+    if row is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Error: No se pudo crear o recuperar el registro de match."
+        )
 
     # ---- actualizar like del lado correspondiente ----
     if me == u_low:
@@ -242,14 +255,19 @@ def swipe_user(
 
     # mantener metadatos
     row.IsRanked = match_is_ranked
-    # if hasattr(row, "GameID"):
-    #     row.GameID = selected_game_id
 
     # antes vs después para detectar "se armó el match"
-    was_match = bool(getattr(row, "LikedByUser1")) and bool(getattr(row, "LikedByUser2"))
+    was_match = bool(getattr(row, "LikedByUser1", False)) and bool(getattr(row, "LikedByUser2", False))
 
-    db.commit()
-    db.refresh(row)
+    try:
+        db.commit()
+        db.refresh(row)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al guardar el swipe: {str(e)}"
+        )
 
     is_match = bool(row.LikedByUser1) and bool(row.LikedByUser2)
 
@@ -259,7 +277,7 @@ def swipe_user(
         if not existing_chat:
             system_msg = Chat(
                 MatchesID=row.ID,
-                SenderID=me,  # o None si permitís nulos
+                SenderID=me,
                 ContentChat="¡Se creó el chat por match!",
                 CreatedDate=datetime.utcnow(),
                 Status=True,

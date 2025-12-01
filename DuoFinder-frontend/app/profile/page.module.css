@@ -176,3 +176,72 @@
 .chips[style*="opacity: 0.6"] .chip {
   cursor: default;
 }
+
+/* Avatar grid (ya existía la mayoría) */
+.avatarWrap {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 14px;
+  align-items: center;
+}
+
+/* NUEVO: contenedor de texto + lista */
+.avatarChooser {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.avatarText {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 0 0 4px;
+}
+
+/* Lista de opciones */
+.avatarOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.avatarOption {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatarOption img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarOptionSelected {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(255, 122, 122, 0.35);
+}
+
+.avatarNone {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--btn-outline-bg);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+/* Para que la tarjeta de preview no se mueva al scrollear */
+.sticky {
+  position: static;
+  top: auto;
+}
