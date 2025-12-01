@@ -62,11 +62,12 @@ def get_match_suggestions(
     my_id = current_user.ID
 
     # Subquery con los usuarios a los que YA hice swipe (cualquier status)
-    swiped_subq = (
-        db.query(Matches.UserID2)
-          .filter(Matches.UserID1 == my_id)
-          .subquery()
-    )
+    from sqlalchemy import select
+    
+    swiped_subq = select(Matches.UserID2).where(Matches.UserID1 == my_id).scalar_subquery()
+    
+    # Otra alternativa:
+    # swiped_subq = db.query(Matches.UserID2).filter(Matches.UserID1 == my_id).scalar_subquery()
 
     # 1) Traer TODOS los juegos del usuario actual
     my_skills = db.query(
