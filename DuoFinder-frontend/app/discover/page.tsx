@@ -1,9 +1,11 @@
+// app/discover/page.tsx
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import SwipeCard from '@/components/SwipeCard';
 import ProfileDetail from '@/components/ProfileDetail';
-import { profiles, Profile } from '@/test/mock/mockData';
+import { useProfiles } from '@/hooks/useProfiles';
+import { Profile } from '@/lib/types';
 import styles from '@/styles/pages/discover.module.css';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -13,26 +15,44 @@ interface SwipeCardRef {
 }
 
 const Discover: React.FC = () => {
+  const { profiles, loading, error, hasMore, loadMoreProfiles, swipeProfile } = useProfiles();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
-  const swipeCardRef = useRef<SwipeCardRef | null>(null);
   const [showNoMore, setShowNoMore] = useState(false);
+  const swipeCardRef = useRef<SwipeCardRef | null>(null);
 
-
-
+  // Cargar más perfiles cuando queden 5
   useEffect(() => {
-    if (currentIndex >= profiles.length) {
+    if (hasMore && profiles.length > 0 && currentIndex >= profiles.length - 5) {
+      loadMoreProfiles();
+    }
+  }, [currentIndex, profiles.length, hasMore, loadMoreProfiles]);
+
+  // Mostrar "no más perfiles" cuando llegamos al final
+  useEffect(() => {
+    if (currentIndex >= profiles.length && !hasMore && !loading) {
       setShowNoMore(true);
     } else {
       setShowNoMore(false);
     }
-  }, [currentIndex]);
-  
-  const handleSwipe = (direction: 'left' | 'right') => {
-    console.log(`Swiped ${direction} on profile ${profiles[currentIndex].id}`);
+  }, [currentIndex, profiles.length, hasMore, loading]);
+
+  const handleSwipe = async (direction: 'left' | 'right') => {
+    if (currentIndex >= profiles.length) return;
+
+    const currentProfile = profiles[currentIndex];
+    console.log(`Swiped ${direction} on profile ${currentProfile.id}`);
     
+    // Registrar el swipe en la API
+    const success = await swipeProfile(currentProfile.id, direction === 'right');
+    
+    if (!success) {
+      // Manejar error (podrías mostrar un toast o mensaje)
+      console.error('Failed to register swipe');
+    }
+
     // Start animation
     setIsAnimating(true);
     
@@ -45,9 +65,8 @@ const Discover: React.FC = () => {
   };
 
   const handleLike = () => {
-    if (currentIndex < profiles.length && !isSwiping) {
+    if (currentIndex < profiles.length && !isSwiping && !isAnimating) {
       setIsSwiping(true);
-      // Trigger swipe animation programmatically
       if (swipeCardRef.current) {
         swipeCardRef.current.triggerSwipe('right');
       }
@@ -55,9 +74,8 @@ const Discover: React.FC = () => {
   };
 
   const handleDislike = () => {
-    if (currentIndex < profiles.length && !isSwiping) {
+    if (currentIndex < profiles.length && !isSwiping && !isAnimating) {
       setIsSwiping(true);
-      // Trigger swipe animation programmatically
       if (swipeCardRef.current) {
         swipeCardRef.current.triggerSwipe('left');
       }
@@ -65,7 +83,9 @@ const Discover: React.FC = () => {
   };
 
   const handleViewDetails = () => {
-    setSelectedProfile(profiles[currentIndex]);
+    if (currentIndex < profiles.length) {
+      setSelectedProfile(profiles[currentIndex]);
+    }
   };
 
   const handleCloseDetails = () => {
@@ -82,6 +102,71 @@ const Discover: React.FC = () => {
     handleCloseDetails();
   };
 
+  // Resetear el índice cuando se cargan nuevos perfiles
+  useEffect(() => {
+    if (currentIndex >= profiles.length && profiles.length > 0) {
+      setCurrentIndex(0);
+    }
+  }, [profiles.length]);
+
+  // Mostrar loading inicial
+  if (loading && profiles.length === 0) {
+    return (
+      <div className={styles.discoverContainer}>
+        <header className={styles.header}>
+          <div className={styles.brand}>
+            <Image 
+              src="/favicon.ico" 
+              alt="DuoFinder" 
+              width={40}
+              height={40}
+              className={styles.logo}
+            />
+            <span className={styles.brandText}>Descubrí</span>
+          </div>
+          <div className={styles.navButtons}>
+            <Link href="/preferences" className={styles.settingsBtn}>⚙️</Link>
+          </div>
+        </header>
+        <div className={styles.loadingState}>
+          <p>Cargando perfiles...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar error
+  if (error && profiles.length === 0) {
+    return (
+      <div className={styles.discoverContainer}>
+        <header className={styles.header}>
+          <div className={styles.brand}>
+            <Image 
+              src="/favicon.ico" 
+              alt="DuoFinder" 
+              width={40}
+              height={40}
+              className={styles.logo}
+            />
+            <span className={styles.brandText}>Descubrí</span>
+          </div>
+          <div className={styles.navButtons}>
+            <Link href="/preferences" className={styles.settingsBtn}>⚙️</Link>
+          </div>
+        </header>
+        <div className={styles.errorState}>
+          <p>Error: {error}</p>
+          <button 
+            onClick={() => loadMoreProfiles()} 
+            className={styles.retryButton}
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.discoverContainer}>
       <header className={styles.header}>
@@ -89,8 +174,8 @@ const Discover: React.FC = () => {
           <Image 
             src="/favicon.ico" 
             alt="DuoFinder" 
-            width={40}  // adjust as needed
-            height={40} // adjust as needed
+            width={40}
+            height={40}
             className={styles.logo}
           />
           <span className={styles.brandText}>Descubrí</span>
@@ -124,14 +209,48 @@ const Discover: React.FC = () => {
                 onViewDetails={handleViewDetails}
               />
             </div>
+
+            {/* Loading indicator mientras carga más perfiles */}
+            {loading && (
+              <div className={styles.loadingIndicator}>
+                <p>Cargando más perfiles...</p>
+              </div>
+            )}
           </>
         ) : (
           <div className={`${styles.noMoreProfiles} ${showNoMore ? styles.visible : ''}`}>
             <h2>No hay más perfiles!</h2>
             <p>Volve luego o ajusta tus preferencias para seguir buscando</p>
+            {loading && (
+              <div className={styles.loadingMore}>
+                <p>Cargando más perfiles...</p>
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* Action buttons */}
+      {currentIndex < profiles.length && (
+        <div className={styles.actionButtons}>
+          <button 
+            className={`${styles.dislikeButton} ${isSwiping || isAnimating ? styles.disabled : ''}`}
+            onClick={handleDislike}
+            disabled={isSwiping || isAnimating}
+            aria-label="Dislike"
+          >
+            ✖️
+          </button>
+          <button 
+            className={`${styles.likeButton} ${isSwiping || isAnimating ? styles.disabled : ''}`}
+            onClick={handleLike}
+            disabled={isSwiping || isAnimating}
+            aria-label="Like"
+          >
+            ❤️
+          </button>
+        </div>
+      )}
 
       {/* Profile Detail Modal */}
       {selectedProfile && (

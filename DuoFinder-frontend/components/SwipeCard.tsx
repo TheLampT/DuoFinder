@@ -1,5 +1,6 @@
+// components/SwipeCard.tsx
 import React, { useState, useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
-import { Profile } from '@/test/mock/mockData';
+import { Profile } from '@/lib/types';
 import styles from '@/styles/components/SwipeCard.module.css';
 
 interface SwipeCardProps {
@@ -32,24 +33,24 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ profile, onSwip
   // Expose the triggerSwipe method to parent component
   useImperativeHandle(ref, () => ({
     triggerSwipe: (direction: 'left' | 'right') => {
-    // Animate swipe out for button clicks
-    if (cardRef.current) {
-      cardRef.current.style.transition = 'transform 0.5s ease, opacity 0.5s ease';
-      
-      // Use smaller distances that won't extend beyond the container
-      if (direction === 'right') {
-        cardRef.current.style.transform = 'translate(400px, 100px) rotate(30deg)';
-      } else {
-        cardRef.current.style.transform = 'translate(-400px, 100px) rotate(-30deg)';
+      // Animate swipe out for button clicks
+      if (cardRef.current) {
+        cardRef.current.style.transition = 'transform 0.5s ease, opacity 0.5s ease';
+        
+        // Use smaller distances that won't extend beyond the container
+        if (direction === 'right') {
+          cardRef.current.style.transform = 'translate(400px, 100px) rotate(30deg)';
+        } else {
+          cardRef.current.style.transform = 'translate(-400px, 100px) rotate(-30deg)';
+        }
+        cardRef.current.style.opacity = '0';
+        
+        // Call onSwipe after animation completes
+        setTimeout(() => {
+          onSwipe(direction);
+        }, 300);
       }
-      cardRef.current.style.opacity = '0';
-      
-      // Call onSwipe after animation completes
-      setTimeout(() => {
-        onSwipe(direction);
-      }, 300);
     }
-  }
   }));
 
   // Handle drag start
@@ -142,6 +143,10 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ profile, onSwip
     onViewDetails();
   };
 
+  // Get primary game or first game for display
+  const displayGames = profile.gameSkill.slice(0, 3);
+  const hasMoreGames = profile.gameSkill.length > 3;
+
   return (
     <div
       ref={cardRef}
@@ -165,19 +170,36 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ profile, onSwip
       <div className={styles.cardContent}>
         <div 
           className={styles.profileImage}
-          style={{ backgroundImage: `url(${profile.image})` }}
+          style={{ 
+            backgroundImage: `url(${profile.image})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
         />
         
         <div className={styles.profileInfo}>
           <h2>{profile.username}, {profile.age}</h2>
-          <p>{profile.bio}</p>
+          <p className={styles.bio}>{profile.bio || 'No bio available'}</p>
           
           <div className={styles.interests}>
-            {profile.gameSkill.slice(0, 3).map((gameSkill, index) => (
-              <span key={index} className={styles.interestTag}>{gameSkill.game}</span>
+            {displayGames.map((gameSkill, index) => (
+              <span key={index} className={styles.interestTag}>
+                {gameSkill.game}
+                {gameSkill.isRanked && (
+                  <span className={styles.rankedIndicator} title="Ranked"> 🏆</span>
+                )}
+              </span>
             ))}
-            {profile.gameSkill.length > 3 && (
-              <span className={styles.moreInterests}>+{profile.gameSkill.length - 3} more</span>
+            {hasMoreGames && (
+              <span className={styles.moreInterests}>
+                +{profile.gameSkill.length - 3} more
+              </span>
+            )}
+            
+            {/* Fallback if no games */}
+            {profile.gameSkill.length === 0 && (
+              <span className={styles.noGames}>No games listed</span>
             )}
           </div>
         </div>

@@ -124,7 +124,13 @@ def get_match_suggestions(
 
     rows = q.offset(skip).limit(limit).all()
 
-    # 5) Armar respuesta
+    # 5) AGREGAR ORDER BY - Esto soluciona el error
+    # Ordenar por ID de usuario para consistencia
+    q = q.order_by(User.ID)
+
+    rows = q.offset(skip).limit(limit).all()
+
+    # 6) Armar respuesta
     out: List[Suggestion] = []
     for user, skill, game, image_url in rows:
         out.append(
