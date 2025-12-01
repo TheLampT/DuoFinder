@@ -61,13 +61,9 @@ def get_match_suggestions(
     
     my_id = current_user.ID
 
-    # Subquery con los usuarios a los que YA hice swipe (cualquier status)
+    # Subquery corregida para SQL Server
     from sqlalchemy import select
-    
     swiped_subq = select(Matches.UserID2).where(Matches.UserID1 == my_id).scalar_subquery()
-    
-    # Otra alternativa:
-    # swiped_subq = db.query(Matches.UserID2).filter(Matches.UserID1 == my_id).scalar_subquery()
 
     # 1) Traer TODOS los juegos del usuario actual
     my_skills = db.query(
@@ -79,13 +75,19 @@ def get_match_suggestions(
     if not my_skills:
         return []  # sin juegos, no hay sugerencias
 
-    # 2) Query base de candidatos
+    # 2) Query base de candidatos - SIMPLIFICADA para evitar problemas de SQL Server
+    # En lugar de hacer joins complejos, hagamos una query más simple
     q = (
         db.query(
-            User,
-            UserGamesSkill,    # <- skills del candidato
-            Games,
-            UserImages.ImageURL.label("image_url"),
+            User.ID,
+            User.Username,
+            User.BirthDate,
+            User.Bio,
+            UserGamesSkill.GameId,
+            UserGamesSkill.SkillLevel,
+            UserGamesSkill.IsRanked,
+            Games.GameName,
+            UserImages.ImageURL,
         )
         .join(UserGamesSkill, User.ID == UserGamesSkill.UserID)
         .join(Games, UserGamesSkill.GameId == Games.ID)
@@ -95,6 +97,7 @@ def get_match_suggestions(
             User.IsActive == True,
             ~User.ID.in_(swiped_subq),
         )
+        .distinct()  # Evitar duplicados por múltiples juegos
     )
 
     # 3) Armar condiciones dinámicas por cada juego propio
@@ -123,27 +126,48 @@ def get_match_suggestions(
     if is_ranked is not None:
         q = q.filter(UserGamesSkill.IsRanked == is_ranked)
 
-    # 5) AGREGAR ORDER BY - Esto soluciona el error
-    # Ordenar por ID de usuario para consistencia
+    # 5) ORDER BY y paginación
     q = q.order_by(User.ID)
-
     rows = q.offset(skip).limit(limit).all()
 
-    # 6) Armar respuesta
+    # 6) Armar respuesta - ahora necesitamos agrupar por usuario
+    user_cache = {}
+    for row in rows:
+        user_id = row.ID
+        if user_id not in user_cache:
+            user_cache[user_id] = {
+                'id': user_id,
+                'username': row.Username,
+                'age': calculate_age(row.BirthDate),
+                'image': row.ImageURL,
+                'bio': row.Bio,
+                'games': []
+            }
+        
+        user_cache[user_id]['games'].append({
+            'game': row.GameName,
+            'skill': row.SkillLevel,
+            'isRanked': bool(row.IsRanked)
+        })
+
+    # 7) Convertir a formato de respuesta
     out: List[Suggestion] = []
-    for user, skill, game, image_url in rows:
+    for user_data in user_cache.values():
+        # Tomar el primer juego para la respuesta (puedes ajustar esta lógica)
+        primary_game = user_data['games'][0]
         out.append(
             Suggestion(
-                id=user.ID,
-                username=user.Username,
-                age=calculate_age(user.BirthDate),
-                image=image_url,
-                bio=user.Bio,
-                game=game.GameName,
-                skill=skill.SkillLevel,
-                isRanked=bool(skill.IsRanked),
+                id=user_data['id'],
+                username=user_data['username'],
+                age=user_data['age'],
+                image=user_data['image'],
+                bio=user_data['bio'],
+                game=primary_game['game'],
+                skill=primary_game['skill'],
+                isRanked=primary_game['isRanked'],
             )
         )
+
     return out
 
 
