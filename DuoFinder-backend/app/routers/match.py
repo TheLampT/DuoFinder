@@ -202,7 +202,7 @@ def swipe_user(
         else:
             raise HTTPException(
                 status_code=400,
-                detail="No se pudo inferir el juego (0 o >1 en común). Enviá game_id.",
+                detail="No se pudi inferir el juego (0 o >1 en común). Enviá game_id.",
             )
 
     # calcular IsRanked del match: ambos deben ser ranked en ese juego
@@ -214,93 +214,83 @@ def swipe_user(
     ).scalar() or 0
     match_is_ranked = 1 if (my_ranked and ot_ranked) else 0
 
-    # ---- obtener/crear fila canónica ----
-    row = db.query(Matches).filter(Matches.UserID1 == u_low, Matches.UserID2 == u_high).first()
-    created_now = False
+    # ---- USAR MERGE para manejar race conditions automáticamente ----
+    # Primero intentar obtener el registro existente
+    existing = db.query(Matches).filter(Matches.UserID1 == u_low, Matches.UserID2 == u_high).first()
     
-    if not row:
-        try:
-            row = Matches(
-                UserID1=u_low,
-                UserID2=u_high,
-                MatchDate=datetime.utcnow(),
-                IsRanked=match_is_ranked,
-            )
-            db.add(row)
-            db.flush()
-            created_now = True
-        except IntegrityError:
-            # Race condition: otra request ya creó el registro
-            db.rollback()
-            row = db.query(Matches).filter(Matches.UserID1 == u_low, Matches.UserID2 == u_high).first()
-            # SI row sigue siendo None, hay un problema más serio
-            if not row:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Error al crear o recuperar el match. Intente nuevamente."
-                )
-
-    # ---- VERIFICAR que row no sea None antes de acceder a sus atributos ----
-    if row is None:
-        raise HTTPException(
-            status_code=500,
-            detail="Error: No se pudo crear o recuperar el registro de match."
+    if existing:
+        row = existing
+        created_now = False
+    else:
+        # Crear un nuevo objeto
+        row = Matches(
+            UserID1=u_low,
+            UserID2=u_high,
+            MatchDate=datetime.utcnow(),
+            IsRanked=match_is_ranked,
         )
-
-    # ---- actualizar like del lado correspondiente ----
+        created_now = True
+    
+    # Actualizar los campos de like
     if me == u_low:
         row.LikedByUser1 = bool(data.like)
     else:
         row.LikedByUser2 = bool(data.like)
-
-    # mantener metadatos
+    
     row.IsRanked = match_is_ranked
-
-    # antes vs después para detectar "se armó el match"
-    was_match = bool(getattr(row, "LikedByUser1", False)) and bool(getattr(row, "LikedByUser2", False))
-
+    
+    # Usar merge para manejar la inserción o actualización
     try:
+        row = db.merge(row)
         db.commit()
         db.refresh(row)
+        
+        # Verificar si es match
+        is_match = bool(row.LikedByUser1 if row.LikedByUser1 is not None else False) and \
+                   bool(row.LikedByUser2 if row.LikedByUser2 is not None else False)
+        
+        # Verificar si acaba de convertirse en match
+        if is_match and created_now:
+            # Crear chat si es un match nuevo
+            existing_chat = db.query(Chat).filter(Chat.MatchesID == row.ID, Chat.Status == True).first()
+            if not existing_chat:
+                system_msg = Chat(
+                    MatchesID=row.ID,
+                    SenderID=me,
+                    ContentChat="¡Se creó el chat por match!",
+                    CreatedDate=datetime.utcnow(),
+                    Status=True,
+                    ReadChat=False,
+                )
+                db.add(system_msg)
+                db.commit()
+                db.refresh(system_msg)
+                return {
+                    "message": "¡Es un match!",
+                    "match": True,
+                    "chat_id": system_msg.ID,
+                    "match_id": row.ID,
+                    "game_id": selected_game_id,
+                    "is_ranked": bool(match_is_ranked),
+                }
+        
+        return {
+            "message": "Swipe registrado/actualizado",
+            "match": is_match,
+            "match_id": row.ID,
+            "liked_by_low_high": [
+                bool(row.LikedByUser1 if row.LikedByUser1 is not None else False),
+                bool(row.LikedByUser2 if row.LikedByUser2 is not None else False)
+            ],
+            "game_id": selected_game_id,
+            "is_ranked": bool(match_is_ranked),
+            "created_now": created_now,
+        }
+        
     except Exception as e:
         db.rollback()
+        print(f"ERROR en swipe: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error al guardar el swipe: {str(e)}"
+            detail=f"Error al procesar el swipe: {str(e)}"
         )
-
-    is_match = bool(row.LikedByUser1) and bool(row.LikedByUser2)
-
-    # ---- crear chat solo una vez cuando aparece el match ----
-    if not was_match and is_match:
-        existing_chat = db.query(Chat).filter(Chat.MatchesID == row.ID, Chat.Status == True).first()
-        if not existing_chat:
-            system_msg = Chat(
-                MatchesID=row.ID,
-                SenderID=me,
-                ContentChat="¡Se creó el chat por match!",
-                CreatedDate=datetime.utcnow(),
-                Status=True,
-                ReadChat=False,
-            )
-            db.add(system_msg)
-            db.commit()
-            db.refresh(system_msg)
-            return {
-                "message": "¡Es un match!",
-                "match": True,
-                "chat_id": system_msg.ID,
-                "match_id": row.ID,
-                "game_id": selected_game_id,
-                "is_ranked": bool(match_is_ranked),
-            }
-
-    return {
-        "message": "Swipe registrado/actualizado",
-        "match": is_match,
-        "match_id": row.ID,
-        "liked_by_low_high": [bool(row.LikedByUser1), bool(row.LikedByUser2)],
-        "game_id": selected_game_id,
-        "is_ranked": bool(match_is_ranked),
-        "created_now": created_now,
-    }
