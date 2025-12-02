@@ -75,7 +75,7 @@ def get_match_suggestions(
     
     my_id = current_user.ID
 
-    from sqlalchemy import select, or_, and_
+    from sqlalchemy import select, or_, and_, exists
 
     # Excluir solo usuarios donde YA HUBO like mutuo
     mutual_swipes = select(Matches.UserID1, Matches.UserID2).where(
@@ -118,11 +118,14 @@ def get_match_suggestions(
         .filter(
             User.ID != current_user.ID,
             User.IsActive == True,
-            ~User.ID.in_(swiped_subq),                   # no mostrar a quien YO ya swippeé
-            ~User.ID.in_(select(mutual_swipes.c.UserID1)), # ni a los que ya están en match confirmado
-            ~User.ID.in_(select(mutual_swipes.c.UserID2))
+            ~exists().where(
+                or_(
+                    and_(Matches.UserID1 == my_id, Matches.UserID2 == User.ID),
+                    and_(Matches.UserID2 == my_id, Matches.UserID1 == User.ID),
+                )
+            ),
         )
-        .distinct()  # Evitar duplicados por múltiples juegos
+        .distinct()
     )
 
     # 3) Armar condiciones dinámicas por cada juego propio
