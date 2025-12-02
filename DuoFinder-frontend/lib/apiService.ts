@@ -10,11 +10,7 @@ import {
   Match ,
   Chat ,
   UserPreferences ,
-  Message,
-  ChatListItem, 
-  ChatMessage, 
-  FrontendMessage,
-  FrontendChat  ,
+  Message
 } from './types';
 
 // ======================= TIPOS DE COMUNIDADES =======================
