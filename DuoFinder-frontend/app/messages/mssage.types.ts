@@ -74,3 +74,41 @@ export interface JoinedCommunity {
 export interface CommunityMessages {
   [key: string]: FrontendMessage[];
 }
+
+export interface ApiChatResponse {
+  match_id: number;
+  other_user: {
+    id: number;
+    name: string;
+    username?: string;
+    avatar?: string;
+    age?: number;
+    bio?: string;
+    location?: string;
+    skillLevel?: string;
+    // Solo incluye los campos que realmente devuelve la API
+  };
+  last_message?: {
+    id: number;
+    match_id: number;
+    sender_id: number;
+    content: string;
+    created_at: string;
+    read: boolean;
+  };
+  unread_count: number;
+}
+
+export interface ApiMessageResponse {
+  id: number;
+  match_id?: number;
+  MatchesID?: number;
+  sender_id?: number;
+  SenderID?: number;
+  content?: string;
+  ContentChat?: string;
+  created_at?: string;
+  CreatedDate?: string;
+  read?: boolean;
+  ReadChat?: boolean;
+}

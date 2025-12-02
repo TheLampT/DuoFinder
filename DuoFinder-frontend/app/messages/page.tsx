@@ -10,7 +10,9 @@ import type {
   FrontendChat,
   FrontendMessage,
   JoinedCommunity,
-  CommunityMessages
+  CommunityMessages,
+  ApiChatResponse,
+  ApiMessageResponse
 } from './mssage.types';
 
 const MessagesPage = () => {
@@ -27,41 +29,39 @@ const MessagesPage = () => {
   const router = useRouter();
 
   // Función para convertir datos de API a tipos del frontend
-  const convertApiChatToFrontend = (apiChat: any): FrontendChat => {
+  const convertApiChatToFrontend = (apiChat: ApiChatResponse): FrontendChat => {
     return {
-      id: `match-${apiChat.match_id || apiChat.ID || apiChat.id}`,
-      matchId: apiChat.match_id || apiChat.ID || apiChat.id || 0,
-      userId: apiChat.other_user?.id || apiChat.userId || 0,
+      id: `match-${apiChat.match_id}`,
+      matchId: apiChat.match_id,
+      userId: apiChat.other_user.id,
       matchedOn: new Date().toISOString(),
       lastMessage: apiChat.last_message ? {
-        id: apiChat.last_message.id || apiChat.last_message.ID || 0,
-        match_id: apiChat.last_message.match_id || apiChat.last_message.MatchesID || 0,
-        sender_id: apiChat.last_message.sender_id || apiChat.last_message.SenderID || 0,
-        content: apiChat.last_message.content || apiChat.last_message.ContentChat || '',
-        created_at: apiChat.last_message.created_at || apiChat.last_message.CreatedDate || new Date().toISOString(),
-        read: apiChat.last_message.read || apiChat.last_message.ReadChat || false
+        id: apiChat.last_message.id,
+        match_id: apiChat.last_message.match_id,
+        sender_id: apiChat.last_message.sender_id,
+        content: apiChat.last_message.content,
+        created_at: apiChat.last_message.created_at,
+        read: apiChat.last_message.read
       } : undefined,
-      unreadCount: apiChat.unread_count || apiChat.unreadCount || 0,
+      unreadCount: apiChat.unread_count,
       user: {
-        id: apiChat.other_user?.id || apiChat.userId || 0,
-        name: apiChat.other_user?.name || `User ${apiChat.other_user?.id || apiChat.userId || 0}`,
-        username: apiChat.other_user?.username || '',
-        age: apiChat.other_user?.age || 0,
-        bio: apiChat.other_user?.bio || '',
-        avatar: apiChat.other_user?.avatar || apiChat.other_user?.ImageURL || '/default-avatar.png',
-        gamePreferences: apiChat.other_user?.gamePreferences || [],
-        onlineStatus: apiChat.other_user?.onlineStatus || false,
-        location: apiChat.other_user?.location || '',
-        skillLevel: apiChat.other_user?.skillLevel || '',
-        favoriteGames: apiChat.other_user?.favoriteGames || []
+        id: apiChat.other_user.id,
+        name: apiChat.other_user.name,
+        avatar: apiChat.other_user.avatar || '/default-avatar.png',
+        // Solo campos que sabemos que existen
+        gamePreferences: [],
+        onlineStatus: false,
+        location: '',
+        skillLevel: '',
+        favoriteGames: []
       }
     };
   };
 
   // Función para convertir mensajes de API
-  const convertApiMessageToFrontend = (apiMessage: any): FrontendMessage => {
+  const convertApiMessageToFrontend = (apiMessage: ApiMessageResponse): FrontendMessage => {
     return {
-      id: apiMessage.id || apiMessage.ID || 0,
+      id: apiMessage.id,
       match_id: apiMessage.match_id || apiMessage.MatchesID || 0,
       sender_id: apiMessage.sender_id || apiMessage.SenderID || 0,
       content: apiMessage.content || apiMessage.ContentChat || '',
@@ -93,7 +93,7 @@ const MessagesPage = () => {
       setLoading(true);
       
       // 1. Cargar chats de la API
-      let apiChats: any[] = [];
+      let apiChats: ApiChatResponse[] = [];
       try {
         apiChats = await chatService.getChats();
       } catch (error) {
@@ -176,7 +176,7 @@ const MessagesPage = () => {
         // Chat real: cargar desde API
         try {
           const apiMessages = await chatService.getChatMessages(selectedMatch.matchId);
-          const convertedMessages = apiMessages.map((msg: any) => 
+          const convertedMessages = apiMessages.map((msg: ApiMessageResponse) => 
             convertApiMessageToFrontend(msg)
           );
           setMessages(convertedMessages);
@@ -355,6 +355,7 @@ const MessagesPage = () => {
         }
       }
     } catch (error) {
+      console.log(error);
       return '';
     }
   };

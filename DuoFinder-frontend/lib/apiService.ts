@@ -16,6 +16,8 @@ import {
   FrontendChat
 } from './types';
 
+import { ApiMessageResponse } from '@/app/messages/mssage.types'
+
 // ======================= TIPOS DE COMUNIDADES =======================
 
 export interface CommunityDTO {
@@ -64,8 +66,8 @@ export const chatService = {
     const messages = await response.json();
     
     // Convertir de API a frontend
-    return messages.map((msg: any) => ({
-      id: msg.id || msg.ID,
+    return messages.map((msg: ApiMessageResponse) => ({
+      id: msg.id || msg.id,
       match_id: msg.match_id || msg.MatchesID,
       sender_id: msg.sender_id || msg.SenderID,
       content: msg.content || msg.ContentChat,
@@ -348,7 +350,7 @@ export const apiService = {
       body: JSON.stringify(payload),
     });
 
-    const body = await response.json().catch(() => ({} as any));
+    const body = await response.json().catch(() => ({} as unknown));
 
     if (!response.ok) {
       throw new Error(body.detail || `Error al crear comunidad (${response.status})`);
@@ -373,7 +375,7 @@ export const apiService = {
       body: JSON.stringify(data),
     });
 
-    const body = await response.json().catch(() => ({} as any));
+    const body = await response.json().catch(() => ({} as unknown));
 
     if (!response.ok) {
       throw new Error(body.detail || `Error al actualizar comunidad (${response.status})`);
@@ -389,7 +391,7 @@ export const apiService = {
     });
 
     if (!response.ok) {
-      const body = await response.json().catch(() => ({} as any));
+      const body = await response.json().catch(() => ({} as unknown));
       throw new Error(body.detail || `Error al eliminar comunidad (${response.status})`);
     }
   },
