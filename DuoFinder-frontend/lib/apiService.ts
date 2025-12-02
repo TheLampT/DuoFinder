@@ -1,15 +1,22 @@
+// lib/apiService.ts
 import { authFetch } from './auth';
-import {
-  Suggestion,
-  UserProfile,
-  SwipeResponse,
+import { 
+  Suggestion, 
+  UserProfile, 
+  SwipeResponse, 
   SwipeInput,
   UpdateProfileRequest,
   UpdateProfileResponse,
-  Match,
-  Chat,
-  UserPreferences,
+  Match ,
+  Chat ,
+  UserPreferences ,
+  Message,
+  ChatListItem,
+  FrontendMessage,
+  FrontendChat
 } from './types';
+
+import { ApiMessageResponse } from '@/app/messages/mssage.types'
 
 // ======================= TIPOS DE COMUNIDADES =======================
 
@@ -32,8 +39,115 @@ export interface CommunityListDTO {
   offset: number;
 }
 
-// prefijo REAL del backend (por los archivos communitys.py)
-const COMMUNITY_BASE = '/community';
+
+// ======================= CHAT SERVICE =======================
+export const chatService = {
+  // Obtener lista de chats con información completa
+  getChats: async (): Promise<ChatListItem[]> => {
+    const response = await authFetch('/chats');
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Error fetching chats');
+    }
+
+    return await response.json();
+  },
+
+  // Obtener mensajes de un chat específico
+  getChatMessages: async (matchId: number): Promise<FrontendMessage[]> => {
+    const response = await authFetch(`/chats/${matchId}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Error fetching messages');
+    }
+
+    const messages = await response.json();
+    
+    // Convertir de API a frontend
+    return messages.map((msg: ApiMessageResponse) => ({
+      id: msg.id || msg.id,
+      match_id: msg.match_id || msg.MatchesID,
+      sender_id: msg.sender_id || msg.SenderID,
+      content: msg.content || msg.ContentChat,
+      created_at: msg.created_at || msg.CreatedDate,
+      read: msg.read || msg.ReadChat || false
+    }));
+  },
+
+  // Enviar mensaje
+  sendMessage: async (matchId: number, content: string): Promise<FrontendMessage> => {
+    const response = await authFetch(`/chats/${matchId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ content }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Error sending message');
+    }
+
+    const message = await response.json();
+    
+    // Convertir de API a frontend
+    return {
+      id: message.id || message.ID,
+      match_id: message.match_id || message.MatchesID,
+      sender_id: message.sender_id || message.SenderID,
+      content: message.content || message.ContentChat,
+      created_at: message.created_at || message.CreatedDate,
+      read: message.read || message.ReadChat || false
+    };
+  },
+
+  // Marcar mensajes como leídos
+  markMessagesAsRead: async (matchId: number): Promise<void> => {
+    const response = await authFetch(`/chats/${matchId}/read`, {
+      method: 'PUT',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Error marking messages as read');
+    }
+  },
+
+  // Función helper para convertir ChatListItem a FrontendChat
+convertToFrontendChat: (chatItem: ChatListItem): FrontendChat => {
+    return {
+      id: `match-${chatItem.match_id}`,
+      matchId: chatItem.match_id,
+      userId: chatItem.other_user.id,
+      matchedOn: new Date().toISOString(),
+      lastMessage: chatItem.last_message ? {
+        id: chatItem.last_message.id,
+        match_id: chatItem.last_message.match_id,
+        sender_id: chatItem.last_message.sender_id,
+        content: chatItem.last_message.content,
+        created_at: chatItem.last_message.created_at,
+        read: chatItem.last_message.read
+      } : undefined,
+      unreadCount: chatItem.unread_count,
+      user: {
+        id: chatItem.other_user.id,
+        name: chatItem.other_user.name || `Usuario ${chatItem.other_user.id}`,
+        username: chatItem.other_user.username || '',
+        age: chatItem.other_user.age || 0,
+        bio: chatItem.other_user.bio || '',
+        avatar: chatItem.other_user.avatar || '/default-avatar.png',
+        gamePreferences: chatItem.other_user.gamePreferences || [],
+        onlineStatus: chatItem.other_user.onlineStatus || false,
+        location: chatItem.other_user.location || '',
+        skillLevel: chatItem.other_user.skillLevel || '',
+        favoriteGames: chatItem.other_user.favoriteGames || []
+      }
+    };
+  }
+};
 
 // ======================= API SERVICE =======================
 
@@ -41,7 +155,7 @@ export const apiService = {
   // === USER PROFILE ===
   getProfile: async (): Promise<UserProfile> => {
     const response = await authFetch('/users/me');
-
+    
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.detail || 'Failed to fetch profile');
@@ -50,9 +164,7 @@ export const apiService = {
     return await response.json();
   },
 
-  updateProfile: async (
-    profileData: UpdateProfileRequest
-  ): Promise<UpdateProfileResponse> => {
+  updateProfile: async (profileData: UpdateProfileRequest): Promise<UpdateProfileResponse> => {
     const response = await authFetch('/users/me', {
       method: 'PUT',
       body: JSON.stringify(profileData),
@@ -80,14 +192,9 @@ export const apiService = {
   },
 
   // === DISCOVER & MATCHING ===
-  getSuggestions: async (
-    skip: number = 0,
-    limit: number = 20
-  ): Promise<Suggestion[]> => {
-    const response = await authFetch(
-      `/matches/suggestions?skip=${skip}&limit=${limit}`
-    );
-
+  getSuggestions: async (skip: number = 0, limit: number = 20): Promise<Suggestion[]> => {
+    const response = await authFetch(`/matches/suggestions?skip=${skip}&limit=${limit}`);
+    
     if (!response.ok) {
       throw new Error('Error fetching suggestions');
     }
@@ -110,7 +217,7 @@ export const apiService = {
 
   getUserProfile: async (userId: number): Promise<UserProfile> => {
     const response = await authFetch(`/users/${userId}`);
-
+    
     if (!response.ok) {
       throw new Error('Error fetching user profile');
     }
@@ -121,7 +228,7 @@ export const apiService = {
   // === CHAT & MATCHES ===
   getMatches: async (): Promise<Match[]> => {
     const response = await authFetch('/matches');
-
+    
     if (!response.ok) {
       throw new Error('Error fetching matches');
     }
@@ -131,7 +238,7 @@ export const apiService = {
 
   getChats: async (): Promise<Chat[]> => {
     const response = await authFetch('/chats');
-
+    
     if (!response.ok) {
       throw new Error('Error fetching chats');
     }
@@ -140,9 +247,7 @@ export const apiService = {
   },
 
   // === PREFERENCES ===
-  updatePreferences: async (
-    preferences: UserPreferences
-  ): Promise<UserPreferences> => {
+  updatePreferences: async (preferences: UserPreferences): Promise<UserPreferences> => {
     const response = await authFetch('/preferences', {
       method: 'PUT',
       body: JSON.stringify(preferences),
@@ -155,9 +260,34 @@ export const apiService = {
     return response.json();
   },
 
-  getPreferences: async (): Promise<UserPreferences> => {
-    const response = await authFetch('/preferences');
+  // Enviar un mensaje
+  sendMessage: async (matchId: number, content: string): Promise<Message> => {
+    const response = await authFetch(`/chats/${matchId}`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
 
+    if (!response.ok) {
+      throw new Error('Error sending message');
+    }
+
+    return response.json();
+  },
+
+  // Obtener información de un match específico
+  getMatchDetails: async (matchId: number): Promise<Match> => {
+    const response = await authFetch(`/matches/${matchId}`);
+    
+    if (!response.ok) {
+      throw new Error('Error fetching match details');
+    }
+
+    return response.json();
+  },
+
+  getPreferences: async (): Promise<UserPreferences> => { // Define UserPreferences
+    const response = await authFetch('/preferences');
+    
     if (!response.ok) {
       throw new Error('Error fetching preferences');
     }
@@ -165,60 +295,71 @@ export const apiService = {
     return response.json();
   },
 
-  // ================== COMMUNITIES (BACKEND REAL) ==================
+  // ======================
+  // COMMUNITIES (BACKEND)
+  // ======================
 
-// === COMUNIDADES ===
+  /** GET /communities/communities */
+  getCommunities: async (
+    params?: { q?: string; limit?: number; offset?: number }
+  ): Promise<CommunityListDTO> => {
 
-getCommunities: async (): Promise<CommunityListDTO> => {
-  const response = await authFetch('/community');
-  if (!response.ok) {
-    throw new Error(`Error al obtener comunidades (${response.status})`);
-  }
-  return response.json();
-},
+    const searchParams = new URLSearchParams();
+    if (params?.q) searchParams.set('q', params.q);
+    if (params?.limit != null) searchParams.set('limit', String(params.limit));
+    if (params?.offset != null) searchParams.set('offset', String(params.offset));
 
-getMyCommunities: async (): Promise<MyCommunityDTO[]> => {
-  const response = await authFetch('/community/my');
-
-  if (response.status === 404) {
-    console.warn(
-      '[getMyCommunities] Endpoint /community/my no encontrado (404). ' +
-      'Devolviendo lista vacía por ahora.'
-    );
-    return [];
-  }
-
-  if (!response.ok) {
-    throw new Error(`Error al obtener mis comunidades (${response.status})`);
-  }
-
-  return response.json();
-},
-
-
-  // Crear comunidad
-  createCommunity: async (data: {
-    name: string;
-    info: string | null;
-    is_public: boolean;
-    game_ids: number[]; // de momento lo dejamos así, aunque no lo uses
-  }): Promise<CommunityDTO> => {
-    const response = await authFetch(`${COMMUNITY_BASE}`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    const query = searchParams.toString();
+    const response = await authFetch(`/communities/communities${query ? `?${query}` : ''}`);
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(
-        err.detail || `Error al crear comunidad (${response.status})`
-      );
+      throw new Error(`Error al obtener comunidades (${response.status})`);
     }
 
     return response.json();
   },
 
-  // Actualizar comunidad
+  /** GET /communities/communities/my */
+  getMyCommunities: async (): Promise<MyCommunityDTO[]> => {
+    const response = await authFetch('/communities/communities/my');
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener mis comunidades (${response.status})`);
+    }
+
+    return response.json();
+  },
+
+  /** POST /communities/community */
+  createCommunity: async (data: {
+    name: string;
+    info?: string | null;
+    is_public?: boolean;
+    game_ids?: number[];
+  }): Promise<CommunityDTO> => {
+
+    const payload = {
+      name: data.name,
+      info: data.info ?? null,
+      is_public: data.is_public ?? true,
+      game_ids: data.game_ids ?? undefined,
+    };
+
+    const response = await authFetch('/communities/community', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    const body = await response.json().catch(() => ({} as unknown));
+
+    if (!response.ok) {
+      throw new Error(body.detail || `Error al crear comunidad (${response.status})`);
+    }
+
+    return body;
+  },
+
+  /** PUT /communities/communities/{id} */
   updateCommunity: async (
     id: number,
     data: {
@@ -228,66 +369,40 @@ getMyCommunities: async (): Promise<MyCommunityDTO[]> => {
       game_ids?: number[];
     }
   ): Promise<CommunityDTO> => {
-    const response = await authFetch(`${COMMUNITY_BASE}/${id}`, {
+
+    const response = await authFetch(`/communities/communities/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
 
+    const body = await response.json().catch(() => ({} as unknown));
+
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(
-        err.detail || `Error al actualizar comunidad (${response.status})`
-      );
+      throw new Error(body.detail || `Error al actualizar comunidad (${response.status})`);
     }
 
-    return response.json();
+    return body;
   },
 
-  // Eliminar comunidad
-  deleteCommunity: async (id: number): Promise<{ message: string }> => {
-    const response = await authFetch(`${COMMUNITY_BASE}/${id}`, {
+  /** DELETE /communities/communities/{id} */
+  deleteCommunity: async (id: number): Promise<void> => {
+    const response = await authFetch(`/communities/communities/${id}`, {
       method: 'DELETE',
     });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(
-        err.detail || `Error al eliminar comunidad (${response.status})`
-      );
+      const body = await response.json().catch(() => ({} as unknown));
+      throw new Error(body.detail || `Error al eliminar comunidad (${response.status})`);
     }
-
-    return response.json();
   },
 
-  // Unirse a comunidad
-  joinCommunity: async (id: number): Promise<{ message: string }> => {
-    const response = await authFetch(`${COMMUNITY_BASE}/${id}/join`, {
-      method: 'POST',
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(
-        err.detail || `Error al unirse a la comunidad (${response.status})`
-      );
-    }
-
-    return response.json();
+  /** MOCK: leave */
+  leaveCommunity: async () => {
+    console.log("leaveCommunity (sin endpoint)");
   },
 
-  // Salir de comunidad
-  leaveCommunity: async (id: number): Promise<{ message: string }> => {
-    const response = await authFetch(`${COMMUNITY_BASE}/${id}/leave`, {
-      method: 'POST',
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(
-        err.detail || `Error al salir de la comunidad (${response.status})`
-      );
-    }
-
-    return response.json();
+  /** MOCK: join */
+  joinCommunity: async () => {
+    console.log("joinCommunity (sin endpoint)");
   },
 };

@@ -610,3 +610,90 @@
   cursor: not-allowed;
   filter: grayscale(0.2);
 }
+
+/* Loading text */
+.loadingText {
+  margin-top: 12px;
+  color: rgba(148, 163, 184, 0.9);
+  font-size: 14px;
+}
+
+/* No matches */
+.noMatches {
+  padding: 40px 20px;
+  text-align: center;
+  color: rgba(148, 163, 184, 0.9);
+}
+
+.noMatches .findPartnersButton {
+  margin-top: 16px;
+}
+
+/* Community indicator */
+.communityIndicator {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #8b5cf6;
+  border: 2px solid #020617;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.communityIndicator span {
+  font-size: 8px;
+  font-weight: bold;
+  color: white;
+}
+
+/* No messages */
+.noMessages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.startConversation {
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+/* No games */
+.noGames {
+  color: rgba(148, 163, 184, 0.7);
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* Sending spinner */
+.sendingSpinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #fff;
+  animation: spin 0.9s linear infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+  .leaveCommunityBtn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  
+  .profileToggle {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+}
