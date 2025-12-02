@@ -243,6 +243,7 @@ export interface FrontendChat {
   user: MessagesUserProfile;
   isCommunity?: boolean;
   communityId?: number;
+  currentUserId?: number;
 }
 
 export interface MessagesUserProfile {

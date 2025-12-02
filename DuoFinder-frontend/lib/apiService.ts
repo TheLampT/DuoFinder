@@ -11,11 +11,10 @@ import {
   Chat ,
   UserPreferences ,
   Message,
-  FrontendMessage,
   FrontendChat
 } from './types';
 
-import { ApiMatchResponse, ApiMessageResponse } from '@/app/messages/message.types'
+import { ApiMatchResponse, ApiMessageResponse, ChatInfoResponse, FrontendMessage } from '@/app/messages/message.types'
 
 // ======================= TIPOS DE COMUNIDADES =======================
 
@@ -37,6 +36,18 @@ export interface CommunityListDTO {
   limit: number;
   offset: number;
 }
+
+const getCurrentUserId = (): number | null => {
+  if (typeof window === 'undefined') return null;
+  const userData = localStorage.getItem('user');
+  if (!userData) return null;
+  try {
+    const user = JSON.parse(userData);
+    return user.id || null;
+  } catch {
+    return null;
+  }
+};
 
 
 // ======================= CHAT SERVICE =======================
@@ -72,53 +83,78 @@ export const chatService = {
   },
 
   // Obtener todos los mensajes de un chat específico
-  getChatMessages: async (matchId: number): Promise<FrontendMessage[]> => {
-  try {
-    const response = await authFetch(`/chats/chats/${matchId}`);
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Error fetching messages');
-    }
+  getChatMessages: async (matchId: number): Promise<{
+    partner_id: number;
+    partner_username: string;
+    messages: FrontendMessage[];
+  }> => {
+    try {
+      const response = await authFetch(`/chats/chats/${matchId}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Error fetching messages');
+      }
 
-    const data = await response.json();
-    
-    console.log(`Respuesta de /chats/${matchId}:`, data);
-    
-    // Si la respuesta es null o undefined, retornar array vacío
-    if (!data) {
-      console.warn(`Respuesta vacía de /chats/${matchId}`);
-      return [];
+      const data = await response.json();
+      
+      console.log(`Respuesta completa de /chats/${matchId}:`, data);
+      
+      // Extraer información del partner
+      const partner_id = data.partner_id || 0;
+      const partner_username = data.partner_username || 'Usuario desconocido';
+      
+      // Extraer mensajes
+      let messagesArray: ApiMessageResponse[] = [];
+      if (data.messages && Array.isArray(data.messages)) {
+        messagesArray = data.messages as ApiMessageResponse[];
+        console.log(`Encontrados ${messagesArray.length} mensajes en propiedad "messages"`);
+      } else if (Array.isArray(data)) {
+        messagesArray = data as ApiMessageResponse[];
+        console.log(`Encontrados ${messagesArray.length} mensajes en array directo`);
+      }
+      
+      // Convertir mensajes a FrontendMessage
+      const messages = messagesArray.map((msg: ApiMessageResponse) => {
+        // Determinar si el mensaje es del usuario actual basado en partner_id
+        // Si sender_id === partner_id → mensaje del partner (otra persona)
+        // Si sender_id !== partner_id → mensaje del usuario actual
+        const isCurrentUser = msg.sender_id !== partner_id;
+        
+        console.log(`Procesando mensaje ${msg.id}:`, {
+          sender_id: msg.sender_id,
+          partner_id: partner_id,
+          isCurrentUser: isCurrentUser,
+          content: msg.content
+        });
+        
+        return {
+          id: msg.id || 0,
+          match_id: msg.match_id || matchId,
+          sender_id: msg.sender_id || 0,
+          content: msg.content || '',
+          created_at: msg.created_at || new Date().toISOString(),
+          read: msg.read || true,
+          isCurrentUser: isCurrentUser  // ¡Aquí está la lógica clave!
+        };
+      });
+      
+      return {
+        partner_id,
+        partner_username,
+        messages
+      };
+    } catch (error) {
+      console.error(`Error en getChatMessages para match ${matchId}:`, error);
+      throw error;
     }
-    
-    // Asegurarnos de que siempre trabajamos con un array
-    let messagesArray: ApiMessageResponse[] = [];
-    
-    if (Array.isArray(data)) {
-      messagesArray = data;
-    } else {
-      // Si no es array, intentar convertirlo
-      console.warn(`Respuesta no es array, intentando convertir:`, typeof data);
-      messagesArray = [data];
-    }
-    
-    // Convertir de API a frontend
-    return messagesArray.map((msg: ApiMessageResponse) => ({
-      id: msg.id || 0,
-      match_id: msg.match_id || matchId,
-      sender_id: msg.sender_id || 0,
-      content: msg.content || '',
-      created_at: msg.created_at || new Date().toISOString(),
-      read: msg.read || true
-    }));
-  } catch (error) {
-    console.error(`Error en getChatMessages para match ${matchId}:`, error);
-    throw error;
-  }
-},
+  },
 
   // Enviar mensaje
-  sendMessage: async (matchId: number, content: string): Promise<FrontendMessage> => {
+  sendMessage: async (matchId: number, content: string): Promise<{
+    message: FrontendMessage;
+    partner_id: number;
+  }> => {
     const response = await authFetch(`/chats/chats/${matchId}`, {
       method: 'POST',
       headers: {
@@ -132,49 +168,82 @@ export const chatService = {
       throw new Error(errorData.detail || 'Error sending message');
     }
 
-    const message = await response.json();
+    const data = await response.json();
+    console.log('Respuesta al enviar mensaje:', data);
     
-    // Convertir de API a frontend
+    // Necesitamos obtener el partner_id para determinar si es mensaje nuestro
+    // Podemos obtenerlo de la respuesta o llamar a getChatInfo
+    let partner_id = 0;
+    let messageData: ApiMessageResponse;
+    
+    if (data.partner_id) {
+      // Si la respuesta incluye partner_id
+      partner_id = data.partner_id;
+      messageData = data.message || data;
+    } else {
+      // Si no, necesitamos obtener el partner_id por separado
+      try {
+        const chatInfo = await chatService.getChatInfo(matchId);
+        partner_id = chatInfo.partner_id;
+        messageData = data;
+      } catch (error) {
+        console.error('Error obteniendo partner_id:', error);
+        messageData = data;
+      }
+    }
+    
+    // Determinar si es mensaje del usuario actual
+    // Si el mensaje recién enviado tiene sender_id diferente al partner_id, es nuestro
+    const sender_id = messageData.sender_id || messageData.SenderID || 0;
+    const isCurrentUser = sender_id !== partner_id;
+    
+    console.log('Determinando isCurrentUser para mensaje enviado:', {
+      sender_id: sender_id,
+      partner_id: partner_id,
+      isCurrentUser: isCurrentUser
+    });
+    
+    const message: FrontendMessage = {
+      id: messageData.id || 0,
+      match_id: messageData.match_id || messageData.MatchesID || matchId,
+      sender_id: sender_id,
+      content: messageData.content || messageData.ContentChat || content,
+      created_at: messageData.created_at || messageData.CreatedDate || new Date().toISOString(),
+      read: messageData.read || messageData.ReadChat || true,
+      isCurrentUser: isCurrentUser
+    };
+    
     return {
-      id: message.id || message.ID,
-      match_id: message.match_id || message.MatchesID || matchId,
-      sender_id: message.sender_id || message.SenderID || 0,
-      content: message.content || message.ContentChat || content,
-      created_at: message.created_at || message.CreatedDate || new Date().toISOString(),
-      read: message.read || message.ReadChat || true
+      message,
+      partner_id
     };
   },
 
   // Función para combinar información del match con información del chat
   combineMatchAndChatInfo: (
     matchData: ApiMatchResponse, 
-    chatInfo: {
-      partner_id: number;
-      partner_username: string;
-      last_message?: string;
-      unread_count: number;
-    }
+    chatInfo: ChatInfoResponse
   ): FrontendChat => {
-    // Determinar quién es el otro usuario
-    // Primero intentamos usar la info del chat (más confiable)
+    const currentUserId = getCurrentUserId();
     const partnerId = chatInfo.partner_id;
     const partnerUsername = chatInfo.partner_username;
     
-    // Si el match tiene información del otro usuario, la usamos como respaldo
     const otherUserFromMatch = matchData.other_user || {
       id: matchData.other_user_id || partnerId,
       name: matchData.other_user_name || partnerUsername,
       avatar: matchData.other_user_avatar || '/default-avatar.png'
     };
 
-    // Crear el último mensaje como FrontendMessage si existe
+    // Determinar si el último mensaje fue enviado por el usuario actual
+    // Necesitamos cargar esto después cuando tengamos los mensajes completos
     const lastMessage = chatInfo.last_message ? {
-      id: 0, // Temporal, se actualizará cuando carguemos los mensajes
+      id: 0,
       match_id: matchData.match_id || matchData.id,
-      sender_id: partnerId, // Asumimos que el último mensaje es del partner
+      sender_id: partnerId, // Temporal - se corregirá cuando carguemos los mensajes
       content: chatInfo.last_message,
-      created_at: new Date().toISOString(), // Temporal
-      read: true
+      created_at: new Date().toISOString(),
+      read: true,
+      isCurrentUser: false // Temporal
     } : undefined;
 
     return {
@@ -192,8 +261,9 @@ export const chatService = {
         bio: otherUserFromMatch.bio || '',
         avatar: otherUserFromMatch.avatar || '/default-avatar.png',
         lastOnline: otherUserFromMatch.last_online,
-        location: otherUserFromMatch.location || ''
-      }
+        location: otherUserFromMatch.location || '',
+      },
+      currentUserId: currentUserId || 0
     };
   }
 };

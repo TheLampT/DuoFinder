@@ -23,6 +23,7 @@ export interface FrontendMessage {
   content: string;
   created_at: string;
   read: boolean;
+  isCurrentUser?: boolean; 
 }
 
 export interface FrontendChat {
@@ -141,4 +142,15 @@ export interface ChatInfoResponse {
   partner_username: string;
   last_message?: string;
   unread_count: number;
+}
+
+export interface ChatMessagesResponse {
+  partner_id: number;
+  partner_username: string;
+  messages: FrontendMessage[];
+}
+
+export interface SendMessageResponse {
+  message: FrontendMessage;
+  partner_id: number;
 }
