@@ -12,6 +12,8 @@ class Matches(Base):
     MatchDate = Column(DateTime, nullable=True)
     Status = Column(Boolean, nullable=False)
     IsRanked = Column(Boolean, nullable=True)
+    LikedByUser1 = Column(Boolean, nullable=True)
+    LikedByUser2 = Column(Boolean, nullable=True)
 
     user1 = relationship("User", foreign_keys=[UserID1], back_populates="matches_as_user1", lazy="joined")
     user2 = relationship("User", foreign_keys=[UserID2], back_populates="matches_as_user2", lazy="joined")
