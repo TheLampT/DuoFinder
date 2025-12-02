@@ -66,6 +66,11 @@ export const authFetch = async (url: string, options: RequestInit = {}): Promise
     headers.set('Authorization', `Bearer ${token}`);
   }
 
+  console.log('authFetch →', {
+    fullUrl: `${API_BASE_URL}${url}`,
+    method: options.method || 'GET',
+  });
+
   const response = await fetch(`${API_BASE_URL}${url}`, {
     ...options,
     headers,
