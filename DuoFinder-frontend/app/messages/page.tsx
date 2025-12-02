@@ -7,10 +7,8 @@ import styles from '@/styles/pages/messages.module.css';
 import Image from 'next/image';
 import { chatService } from '@/lib/apiService';
 import type {
-  MessagesUserProfile,
   FrontendChat,
   FrontendMessage,
-  ApiChatListItem,
   JoinedCommunity,
   CommunityMessages
 } from './mssage.types';

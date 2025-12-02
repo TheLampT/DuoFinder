@@ -107,7 +107,7 @@ const Discover: React.FC = () => {
     if (currentIndex >= profiles.length && profiles.length > 0) {
       setCurrentIndex(0);
     }
-  }, [profiles.length]);
+  }, [currentIndex, profiles.length]);
 
   // Mostrar loading inicial
   if (loading && profiles.length === 0) {

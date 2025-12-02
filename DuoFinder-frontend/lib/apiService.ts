@@ -9,11 +9,7 @@ import {
   Match ,
   Chat ,
   UserPreferences ,
-  Message,
-  ChatListItem, 
-  ChatMessage, 
-  FrontendMessage,
-  FrontendChat  ,
+  Message
 } from './types';
 
 export interface CommunityDTO {
