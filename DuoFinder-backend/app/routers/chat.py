@@ -2,8 +2,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from sqlalchemy import asc, desc
+from sqlalchemy import asc, desc, and_
 from datetime import datetime
+from typing import Optional, List
 
 from app.db.connection import get_db
 from app.routers.auth import get_current_user
@@ -39,11 +40,15 @@ class ChatMessageOut(BaseModel):
         )
 
 class ChatInfo(BaseModel):
-    last_message: str | None  # El contenido del último mensaje
-    unread_count: int  # Número de mensajes no leídos
+    partner_id: int
+    partner_username: str
+    last_message: Optional[str]
+    unread_count: int
 
-    class Config:
-        orm_mode = True
+class ChatThreadOut(BaseModel):
+    partner_id: int
+    partner_username: str
+    messages: List[ChatMessageOut]
 
 # ---------- Helpers ----------
 def _assert_user_in_match(db: Session, match_id: int, user_id: int) -> Matches:
@@ -64,29 +69,43 @@ def get_chat_info(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Devuelve la información del chat: último mensaje y contador de mensajes no leídos.
-    """
-    # Verificar que el usuario esté en el match
-    _assert_user_in_match(db, match_id, current_user.ID)
+    # 1) Verificar pertenencia y recuperar el match
+    match = _assert_user_in_match(db, match_id, current_user.ID)
 
-    # Obtener el último mensaje del chat
-    last_message = db.query(Chat).filter(Chat.MatchesID == match_id).order_by(desc(Chat.CreatedDate)).first()
-    last_message_content = last_message.ContentChat if last_message else None
+    # 2) Determinar el "otro" usuario
+    partner_id = match.UserID2 if current_user.ID == match.UserID1 else match.UserID1
+    partner = db.query(User.ID, User.Username).filter(User.ID == partner_id).first()
+    partner_username = partner.Username if partner else "(usuario)"
 
-    # Contar los mensajes no leídos para el usuario actual
-    unread_count = db.query(Chat).filter(
-        Chat.MatchesID == match_id,
-        Chat.ReadChat == False,
-        Chat.SenderID != current_user.ID
-    ).count()
+    # 3) Último mensaje del chat
+    last_message_row = (
+        db.query(Chat)
+          .filter(Chat.MatchesID == match_id)
+          .order_by(desc(Chat.CreatedDate))
+          .first()
+    )
+    last_message_content = last_message_row.ContentChat if last_message_row else None
 
-    return ChatInfo(
-        last_message=last_message_content,
-        unread_count=unread_count
+    # 4) Mensajes no leídos para el usuario actual
+    unread_count = (
+        db.query(Chat)
+          .filter(
+              Chat.MatchesID == match_id,
+              Chat.ReadChat == False,
+              Chat.SenderID != current_user.ID,
+          )
+          .count()
     )
 
-@router.get("/{match_id}", response_model=list[ChatMessageOut])
+    return ChatInfo(
+        partner_id=partner_id,
+        partner_username=partner_username,
+        last_message=last_message_content,
+        unread_count=unread_count,
+    )
+
+
+@router.get("/{match_id}", response_model=ChatThreadOut)
 def get_chat(
     match_id: int,
     limit: int = Query(50, ge=1, le=200),
@@ -95,11 +114,18 @@ def get_chat(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Devuelve los mensajes del chat (orden ascendente por fecha).
-    Paginado simple con limit/offset.
+    Devuelve el hilo de chat con:
+      - partner_id y partner_username (el otro usuario del match)
+      - messages: lista paginada de mensajes (ascendente por fecha)
     """
-    _assert_user_in_match(db, match_id, current_user.ID)
+    match = _assert_user_in_match(db, match_id, current_user.ID)
 
+    # Determinar el "otro" usuario del match
+    partner_id = match.UserID2 if current_user.ID == match.UserID1 else match.UserID1
+    partner = db.query(User.ID, User.Username).filter(User.ID == partner_id).first()
+    partner_username = partner.Username if partner else "(usuario)"
+
+    # Traer mensajes
     rows = (
         db.query(Chat)
         .filter(Chat.MatchesID == match_id)
@@ -108,7 +134,12 @@ def get_chat(
         .limit(limit)
         .all()
     )
-    return [ChatMessageOut.from_model(r) for r in rows]
+
+    return ChatThreadOut(
+        partner_id=partner_id,
+        partner_username=partner_username,
+        messages=[ChatMessageOut.from_model(r) for r in rows],
+    )
 
 
 @router.post("/{match_id}", response_model=ChatMessageOut, status_code=status.HTTP_201_CREATED)
@@ -118,18 +149,14 @@ def send_message(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Inserta un mensaje nuevo en el chat perteneciente al match dado.
-    """
     _assert_user_in_match(db, match_id, current_user.ID)
 
-    # Crear registro
     row = Chat(
         MatchesID=match_id,
         SenderID=current_user.ID,
         ContentChat=message.content.strip(),
         CreatedDate=datetime.utcnow(),
-        Status="sent",
+        Status=True,          # <-- boolean si tu columna es bit/bool
         ReadChat=False,
     )
     db.add(row)
