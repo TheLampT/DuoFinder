@@ -53,7 +53,7 @@ class Match(BaseModel):
     match_date: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 # -------------------- Util --------------------
@@ -360,3 +360,30 @@ def get_all_matches(
         result.append(match_data)
 
     return result
+
+@router.get("/matches/{match_id}", response_model=Match)
+def get_match_details(
+    match_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Verificar si el match existe
+    match = db.query(Matches).filter(Matches.ID == match_id).first()
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+
+    # Verificar si el usuario es parte del match (UserID1 o UserID2)
+    if match.UserID1 != current_user.ID and match.UserID2 != current_user.ID:
+        raise HTTPException(status_code=403, detail="You are not part of this match")
+
+    # Devolver los detalles del match
+    return {
+        "match_id": match.ID,
+        "user1_id": match.UserID1,
+        "user2_id": match.UserID2,
+        "is_ranked": match.IsRanked,
+        "status": match.Status,
+        "liked_by_user1": match.LikedByUser1,
+        "liked_by_user2": match.LikedByUser2,
+        "match_date": match.MatchDate,
+    }
