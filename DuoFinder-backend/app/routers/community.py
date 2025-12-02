@@ -238,3 +238,60 @@ def get_my_communities(
             role=role,
         ))
     return result
+
+
+@router.post("/{community_id}/join", status_code=status.HTTP_200_OK)
+def join_community(
+    community_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Verificar si la comunidad existe
+    community = db.query(Community).filter(Community.ID == community_id).first()
+    if not community:
+        raise HTTPException(status_code=404, detail="Community not found")
+
+    # Verificar si el usuario ya es miembro de la comunidad
+    existing_member = db.query(CommunitysMembers).filter(
+        CommunitysMembers.Community_id == community_id,
+        CommunitysMembers.User_id == current_user.ID
+    ).first()
+    if existing_member:
+        raise HTTPException(status_code=400, detail="Already a member of this community")
+
+    # Agregar al usuario como miembro (con rol "member")
+    new_member = CommunitysMembers(
+        Community_id=community_id,
+        User_id=current_user.ID,
+        Role="member"  # O el rol que quieras asignar
+    )
+    db.add(new_member)
+    db.commit()
+    db.refresh(new_member)
+
+    return {"message": f"User {current_user.username} successfully joined the community."}
+
+@router.post("/{community_id}/leave", status_code=status.HTTP_200_OK)
+def leave_community(
+    community_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Verificar si la comunidad existe
+    community = db.query(Community).filter(Community.ID == community_id).first()
+    if not community:
+        raise HTTPException(status_code=404, detail="Community not found")
+
+    # Verificar si el usuario es miembro de la comunidad
+    member = db.query(CommunitysMembers).filter(
+        CommunitysMembers.Community_id == community_id,
+        CommunitysMembers.User_id == current_user.ID
+    ).first()
+    if not member:
+        raise HTTPException(status_code=400, detail="Not a member of this community")
+
+    # Eliminar al usuario de la comunidad
+    db.delete(member)
+    db.commit()
+
+    return {"message": f"User {current_user.username} successfully left the community."}
