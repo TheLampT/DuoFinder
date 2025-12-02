@@ -239,7 +239,7 @@ export const apiService = {
     return response.json();
   },
 
-  getPreferences: async (): Promise<UserPreferences> => {
+  getPreferences: async (): Promise<UserPreferences> => { // Define UserPreferences
     const response = await authFetch('/preferences');
 
     if (!response.ok) {
