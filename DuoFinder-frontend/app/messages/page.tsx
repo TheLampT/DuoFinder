@@ -11,9 +11,24 @@ import type {
   FrontendMessage,
   JoinedCommunity,
   CommunityMessages,
-  ApiChatResponse,
-  ApiMessageResponse
-} from './mssage.types';
+  ApiMatchResponse
+} from './message.types';
+
+const useIsMobile = () => {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+      const checkIsMobile = () => {
+        setIsMobile(window.innerWidth < 768);
+      };
+
+      checkIsMobile();
+      window.addEventListener('resize', checkIsMobile);
+      return () => window.removeEventListener('resize', checkIsMobile);
+    }, []);
+
+    return isMobile;
+  };
 
 const MessagesPage = () => {
   const [matches, setMatches] = useState<FrontendChat[]>([]);
@@ -23,92 +38,64 @@ const MessagesPage = () => {
   const [showProfile, setShowProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isMobile, setIsMobile] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
   const router = useRouter();
 
-  // Función para convertir datos de API a tipos del frontend
-  const convertApiChatToFrontend = (apiChat: ApiChatResponse): FrontendChat => {
-    return {
-      id: `match-${apiChat.match_id}`,
-      matchId: apiChat.match_id,
-      userId: apiChat.other_user.id,
-      matchedOn: new Date().toISOString(),
-      lastMessage: apiChat.last_message ? {
-        id: apiChat.last_message.id,
-        match_id: apiChat.last_message.match_id,
-        sender_id: apiChat.last_message.sender_id,
-        content: apiChat.last_message.content,
-        created_at: apiChat.last_message.created_at,
-        read: apiChat.last_message.read
-      } : undefined,
-      unreadCount: apiChat.unread_count,
-      user: {
-        id: apiChat.other_user.id,
-        name: apiChat.other_user.name,
-        avatar: apiChat.other_user.avatar || '/default-avatar.png',
-        // Solo campos que sabemos que existen
-        gamePreferences: [],
-        onlineStatus: false,
-        location: '',
-        skillLevel: '',
-        favoriteGames: []
-      }
-    };
-  };
+  const isMobile = useIsMobile();
 
-  // Función para convertir mensajes de API
-  const convertApiMessageToFrontend = (apiMessage: ApiMessageResponse): FrontendMessage => {
-    return {
-      id: apiMessage.id,
-      match_id: apiMessage.match_id || apiMessage.MatchesID || 0,
-      sender_id: apiMessage.sender_id || apiMessage.SenderID || 0,
-      content: apiMessage.content || apiMessage.ContentChat || '',
-      created_at: apiMessage.created_at || apiMessage.CreatedDate || new Date().toISOString(),
-      read: apiMessage.read || apiMessage.ReadChat || false
-    };
-  };
-
-  // Check if mobile on mount and resize
-  useEffect(() => {
-    const checkIsMobile = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      if (mobile) {
-        setShowSidebar(selectedMatch === null);
-      } else {
-        setShowSidebar(true);
-      }
-    };
-
-    checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
-    return () => window.removeEventListener('resize', checkIsMobile);
-  }, [selectedMatch]);
-
-  // Cargar matches + comunidades unidas
-  const loadChats = useCallback(async () => {
+  // Cargar todos los matches y su información de chat
+  const loadMatchesWithChatInfo = useCallback(async () => {
     try {
       setLoading(true);
       
-      // 1. Cargar chats de la API
-      let apiChats: ApiChatResponse[] = [];
+      // 1. Obtener todos los matches del usuario
+      let apiMatches: ApiMatchResponse[] = [];
       try {
-        apiChats = await chatService.getChats();
+        apiMatches = await chatService.getAllMatches();
+        console.log('Matches obtenidos:', apiMatches);
       } catch (error) {
-        console.error('Error loading chats from API:', error);
-        // Fallback a datos mock si la API falla
-        apiChats = [];
+        console.error('Error loading matches from API:', error);
+        apiMatches = [];
       }
       
-      // 2. Convertir a FrontendChat
-      const realMatches: FrontendChat[] = apiChats.map(chatItem => 
-        convertApiChatToFrontend(chatItem)
+      // 2. Para cada match, obtener la información del chat
+      const chatsWithInfo = await Promise.all(
+        apiMatches.map(async (match) => {
+          try {
+            // Obtener información del chat para este match
+            const chatInfo = await chatService.getChatInfo(match.match_id || match.id);
+            console.log(`Chat info para match ${match.match_id || match.id}:`, chatInfo);
+            
+            // Combinar información del match con información del chat
+            return chatService.combineMatchAndChatInfo(match, chatInfo);
+          } catch (error) {
+            console.error(`Error loading chat info for match ${match.match_id || match.id}:`, error);
+            // Si hay error, crear chat básico con la información del match
+            return {
+              id: `match-${match.match_id || match.id}`,
+              matchId: match.match_id || match.id,
+              userId: match.other_user_id || 0,
+              matchedOn: match.created_at || new Date().toISOString(),
+              lastMessage: undefined,
+              unreadCount: 0,
+              user: {
+                id: match.other_user_id || 0,
+                name: match.other_user_name || `Usuario ${match.other_user_id || match.id}`,
+                avatar: match.other_user_avatar || '/default-avatar.png',
+                gamePreferences: [],
+                onlineStatus: false,
+                location: '',
+                skillLevel: '',
+                favoriteGames: []
+              }
+            } as FrontendChat;
+          }
+        })
       );
 
       // 3. Cargar comunidades desde localStorage
-      let communityMatches: FrontendChat[] = [];
+      let communityChats: FrontendChat[] = [];
       if (typeof window !== 'undefined') {
         const rawJoined = localStorage.getItem('joinedCommunities');
         const joined: JoinedCommunity[] = rawJoined ? JSON.parse(rawJoined) : [];
@@ -116,7 +103,7 @@ const MessagesPage = () => {
         const rawMsgs = localStorage.getItem('communityMessages');
         const allMsgs: CommunityMessages = rawMsgs ? JSON.parse(rawMsgs) : {};
         
-        communityMatches = joined.map(c => {
+        communityChats = joined.map(c => {
           const msgs = allMsgs[c.id.toString()] || [];
           const lastMessage = msgs.length > 0 ? msgs[msgs.length - 1] : undefined;
           
@@ -133,6 +120,7 @@ const MessagesPage = () => {
               id: 0,
               name: `[Comunidad] ${c.name}`,
               avatar: '/favicon.ico',
+              bio: `Comunidad de ${c.gameName}`,
               gamePreferences: [c.gameName],
               onlineStatus: true,
               location: '',
@@ -143,9 +131,28 @@ const MessagesPage = () => {
         });
       }
 
-      setMatches([...communityMatches, ...realMatches]);
+      // 4. Combinar todos los chats
+      const allChats = [...communityChats, ...chatsWithInfo]
+        .filter(chat => chat !== null)
+        .sort((a, b) => {
+          // Ordenar por si tiene último mensaje primero, luego por fecha
+          if (a.lastMessage && !b.lastMessage) return -1;
+          if (!a.lastMessage && b.lastMessage) return 1;
+          
+          // Si ambos tienen último mensaje o no tienen, ordenar por fecha
+          const getDate = (chat: FrontendChat) => {
+            return chat.lastMessage?.created_at || chat.matchedOn;
+          };
+          
+          const dateA = new Date(getDate(a)).getTime();
+          const dateB = new Date(getDate(b)).getTime();
+          return dateB - dateA; // Orden descendente (más reciente primero)
+        });
+
+      console.log('Chats finales:', allChats);
+      setMatches(allChats);
     } catch (error) {
-      console.error('Error loading chats:', error);
+      console.error('Error loading matches with chat info:', error);
       setMatches([]);
     } finally {
       setLoading(false);
@@ -153,68 +160,96 @@ const MessagesPage = () => {
   }, []);
 
   useEffect(() => {
-    loadChats();
-  }, [loadChats]);
+    loadMatchesWithChatInfo();
+  }, [loadMatchesWithChatInfo]);
 
-  // Cargar mensajes cuando se selecciona un chat
+  // Cargar todos los mensajes cuando se selecciona un chat
   useEffect(() => {
-    if (!selectedMatch) {
-      setMessages([]);
-      return;
-    }
+  console.log('=== useEffect de mensajes activado ===');
+  console.log('selectedMatch:', selectedMatch);
+  console.log('selectedMatch?.matchId:', selectedMatch?.matchId);
+  console.log('selectedMatch?.isCommunity:', selectedMatch?.isCommunity);
+  
+  if (!selectedMatch) {
+    console.log('No hay match seleccionado, limpiando mensajes');
+    setMessages([]);
+    return;
+  }
 
-    const loadMessages = async () => {
-      // Si es comunidad: usar localStorage
-      if (selectedMatch.isCommunity && selectedMatch.communityId) {
-        if (typeof window !== 'undefined') {
-          const raw = localStorage.getItem('communityMessages');
-          const all: CommunityMessages = raw ? JSON.parse(raw) : {};
-          const msgs = all[selectedMatch.communityId.toString()] || [];
-          setMessages(msgs);
-        }
-      } else if (selectedMatch.matchId) {
-        // Chat real: cargar desde API
-        try {
-          const apiMessages = await chatService.getChatMessages(selectedMatch.matchId);
-          const convertedMessages = apiMessages.map((msg: ApiMessageResponse) => 
-            convertApiMessageToFrontend(msg)
-          );
-          setMessages(convertedMessages);
+  const loadAllMessages = async () => {
+    console.log('=== loadAllMessages ejecutándose ===');
+    
+    // Si es comunidad: usar localStorage
+    if (selectedMatch.isCommunity && selectedMatch.communityId) {
+      console.log('Es comunidad, usando localStorage');
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('communityMessages');
+        const all: CommunityMessages = raw ? JSON.parse(raw) : {};
+        const msgs = all[selectedMatch.communityId.toString()] || [];
+        console.log('Mensajes de comunidad:', msgs);
+        setMessages(msgs);
+      }
+    } else if (selectedMatch.matchId) {
+      // Chat real: cargar TODOS los mensajes del match
+      try {
+        console.log(`Cargando mensajes reales para match ${selectedMatch.matchId}`);
+        const allMessages = await chatService.getChatMessages(selectedMatch.matchId);
+        console.log('Mensajes obtenidos de API:', allMessages);
+        
+        if (Array.isArray(allMessages)) {
+          console.log(`Se obtuvieron ${allMessages.length} mensajes`);
+          setMessages(allMessages);
           
-          // Marcar mensajes como leídos
-          if (selectedMatch.unreadCount > 0) {
-            try {
-              await chatService.markMessagesAsRead(selectedMatch.matchId);
-            } catch (error) {
-              console.error('Error marking messages as read:', error);
-            }
+          // Actualizar el último mensaje con la información real
+          if (allMessages.length > 0) {
+            const lastRealMessage = allMessages[allMessages.length - 1];
+            console.log('Último mensaje real:', lastRealMessage);
+            
+            setMatches(prev => {
+              console.log('Actualizando matches con último mensaje');
+              return prev.map(m => {
+                if (m.id === selectedMatch.id) {
+                  return {
+                    ...m,
+                    lastMessage: lastRealMessage
+                  };
+                }
+                return m;
+              });
+            });
           }
-        } catch (error) {
-          console.error('Error loading messages:', error);
+        } else {
+          console.error('Los mensajes no son un array:', allMessages);
           setMessages([]);
         }
+      } catch (error) {
+        console.error('Error loading all messages:', error);
+        setMessages([]);
       }
+    }
 
-      if (isMobile) {
-        setShowSidebar(false);
-      }
-    };
-
-    loadMessages();
-  }, [selectedMatch, isMobile]);
-
-  const handleSelectMatch = (match: FrontendChat) => {
-    setSelectedMatch(match);
-    setShowProfile(false);
-
-    // Marcar como leído en el frontend
-    if (match.unreadCount > 0) {
-      const updatedMatches = matches.map(m =>
-        m.id === match.id ? { ...m, unreadCount: 0 } : m
-      );
-      setMatches(updatedMatches);
+    if (isMobile) {
+      console.log('Es móvil, ocultando sidebar');
+      setShowSidebar(false);
     }
   };
+
+  loadAllMessages();
+}, [selectedMatch, isMobile]);
+
+  const handleSelectMatch = (match: FrontendChat) => {
+  console.log('=== handleSelectMatch llamado ===');
+  console.log('Match seleccionado:', match);
+  console.log('match.id:', match.id);
+  console.log('match.matchId:', match.matchId);
+  console.log('match.user.name:', match.user.name);
+  
+  setSelectedMatch(match);
+  setShowProfile(false);
+  setNewMessage('');
+  
+  console.log('selectedMatch después de setSelectedMatch:', match);
+};
 
   const handleBackToMatches = () => {
     setSelectedMatch(null);
@@ -251,30 +286,37 @@ const MessagesPage = () => {
           const communityKey = selectedMatch.communityId.toString();
           all[communityKey] = updatedMessages;
           localStorage.setItem('communityMessages', JSON.stringify(all));
+          
+          // Actualizar el último mensaje en la lista
+          setMatches(prev => prev.map(m => {
+            if (m.id === selectedMatch.id) {
+              return {
+                ...m,
+                lastMessage: message
+              };
+            }
+            return m;
+          }));
         }
       } else if (selectedMatch.matchId) {
         // Mensaje real: enviar a API
         const sentMessage = await chatService.sendMessage(selectedMatch.matchId, newMessage.trim());
-        const convertedMessage = convertApiMessageToFrontend(sentMessage);
         
-        const updatedMessages = [...messages, convertedMessage];
+        const updatedMessages = [...messages, sentMessage];
         setMessages(updatedMessages);
         setNewMessage('');
+        
+        // Actualizar el último mensaje en la lista
+        setMatches(prev => prev.map(m => {
+          if (m.id === selectedMatch.id) {
+            return {
+              ...m,
+              lastMessage: sentMessage
+            };
+          }
+          return m;
+        }));
       }
-
-      // Actualizar lastMessage en la lista
-      const updatedMatches = matches.map(match => {
-        if (match.id === selectedMatch.id) {
-          const lastMsg = messages.length > 0 ? messages[messages.length - 1] : undefined;
-          return {
-            ...match,
-            lastMessage: lastMsg,
-            unreadCount: 0
-          };
-        }
-        return match;
-      });
-      setMatches(updatedMatches);
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -461,7 +503,7 @@ const MessagesPage = () => {
                             : match.lastMessage.content)
                         : (match.isCommunity
                             ? 'Empezá la conversación...'
-                            : match.user.bio?.substring(0, 30) || '')}
+                            : 'Nuevo match - ¡Decí hola!')}
                     </p>
                     {match.unreadCount > 0 && (
                       <span className={styles.unreadCount}>
@@ -597,7 +639,7 @@ const MessagesPage = () => {
                   <div className={styles.gameTags}>
                     {selectedMatch.user.favoriteGames && selectedMatch.user.favoriteGames.length > 0 ? (
                       selectedMatch.user.favoriteGames.map(
-                        (game, index) => (
+                        (game: string, index: number) => (
                           <span
                             key={index}
                             className={styles.gameTag}
@@ -617,7 +659,7 @@ const MessagesPage = () => {
                   <div className={styles.gameTags}>
                     {selectedMatch.user.gamePreferences && selectedMatch.user.gamePreferences.length > 0 ? (
                       selectedMatch.user.gamePreferences.map(
-                        (game, index) => (
+                        (game: string, index: number) => (
                           <span
                             key={index}
                             className={styles.gameTag}

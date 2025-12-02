@@ -245,17 +245,6 @@
   text-overflow: ellipsis;
 }
 
-.unreadCount {
-  min-width: 18px;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: #ef4444;
-  color: #f9fafb;
-  font-size: 11px;
-  font-weight: 700;
-  text-align: center;
-}
-
 /* Contenedor de chat */
 
 .chatContainer {

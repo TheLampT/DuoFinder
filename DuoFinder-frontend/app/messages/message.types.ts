@@ -112,3 +112,33 @@ export interface ApiMessageResponse {
   read?: boolean;
   ReadChat?: boolean;
 }
+
+export interface ApiMatchResponse {
+  id: number;
+  match_id: number;
+  user_id: number;
+  other_user_id: number;
+  other_user_name?: string;
+  other_user_avatar?: string;
+  created_at: string;
+  status: string;
+  other_user?: {
+    id: number;
+    name: string;
+    username?: string;
+    avatar?: string;
+    age?: number;
+    bio?: string;
+    location?: string;
+    skill_level?: string;
+    online_status?: boolean;
+    last_online?: string;
+  };
+}
+
+export interface ChatInfoResponse {
+  partner_id: number;
+  partner_username: string;
+  last_message?: string;
+  unread_count: number;
+}
