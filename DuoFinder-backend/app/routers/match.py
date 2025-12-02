@@ -42,6 +42,20 @@ class SwipeInput(BaseModel):
     game_id: Optional[int] = None  # opcional: si no viene, se infiere
 
 
+class Match(BaseModel):
+    match_id: int
+    user1_id: int
+    user2_id: int
+    is_ranked: bool
+    status: bool
+    liked_by_user1: bool
+    liked_by_user2: bool
+    match_date: datetime
+
+    class Config:
+        from_attributes = True
+
+
 # -------------------- Util --------------------
 def calculate_age(birthdate: date) -> int:
     today = date.today()
@@ -297,3 +311,39 @@ def swipe_user(
             status_code=500,
             detail=f"Error al procesar el swipe: {str(e)}"
         )
+
+@router.get("/matches", response_model=List[Match])
+def get_all_matches(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # ID del usuario actual
+    my_id = current_user.ID
+
+    # Traer todos los matchs en los que el usuario está involucrado, ya sea como UserID1 o UserID2
+    matches = db.query(Matches).filter(
+        or_(
+            Matches.UserID1 == my_id,
+            Matches.UserID2 == my_id
+        )
+    ).all()
+
+    if not matches:
+        raise HTTPException(status_code=404, detail="No se encontraron matches.")
+
+    # Armar la respuesta en formato adecuado
+    result = []
+    for match in matches:
+        match_data = {
+            "match_id": match.ID,
+            "user1_id": match.UserID1,
+            "user2_id": match.UserID2,
+            "is_ranked": match.IsRanked,
+            "status": match.Status,
+            "liked_by_user1": match.LikedByUser1,
+            "liked_by_user2": match.LikedByUser2,
+            "match_date": match.MatchDate,
+        }
+        result.append(match_data)
+
+    return result
