@@ -121,7 +121,7 @@ def create_community(
     return _community_to_out(c)
 
 
-@router.put("/{community_id}", response_model=CommunityOut)
+@router.put("/community/{community_id}", response_model=CommunityOut)
 def update_community(
     community_id: int,
     payload: CommunityUpdate,
@@ -167,7 +167,7 @@ def update_community(
     return _community_to_out(c)
 
 
-@router.delete("/{community_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/community/{community_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_community(
     community_id: int,
     db: Session = Depends(get_db),
@@ -189,7 +189,7 @@ def delete_community(
     return
 
 
-@router.get("/", response_model=CommunityList)
+@router.get("/community", response_model=CommunityList)
 def get_all_communities(
     q: Optional[str] = Query(None, description="Búsqueda por nombre o info"),
     limit: int = Query(20, ge=1, le=100),
@@ -215,7 +215,7 @@ def get_all_communities(
     )
 
 
-@router.get("/my", response_model=List[MyCommunityOut])
+@router.get("/community/my", response_model=List[MyCommunityOut])
 def get_my_communities(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
