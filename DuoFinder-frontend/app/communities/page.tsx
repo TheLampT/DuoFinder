@@ -2,6 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import styles from './communities.module.css';
+import {
+  apiService,
+  CommunityDTO,
+  MyCommunityDTO,
+  CommunityListDTO,
+} from '@/lib/apiService';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -17,10 +23,9 @@ interface Community {
   description: string;
   logoInitials: string;
   logoUrl?: string;
-  createdBy: string; // 'me' si la creó el usuario
 }
 
-// Define el tipo para los objetos en localStorage
+// Objeto que seguimos usando para sincronizar con la pantalla de Mensajes
 interface JoinedCommunity {
   id: number;
   name: string;
@@ -31,23 +36,7 @@ interface JoinedCommunity {
   description: string;
   logoInitials?: string;
   logoUrl?: string;
-  createdBy: string;
 }
-
-const CURRENT_USER_ID = 'me';
-
-const MOCK_COMMUNITIES: Community[] = [
-  {
-    id: 1,
-    name: 'Flex LAS Tryhard',
-    gameId: 'lol',
-    gameName: 'League of Legends',
-    members: 128,
-    description: 'Comunidad para armar flex, clash y equipos tryhard en LAS.',
-    logoInitials: 'FX',
-    createdBy: 'system',
-  },
-];
 
 const GAME_FILTERS: { id: GameId | 'all'; label: string }[] = [
   { id: 'all', label: 'Todos' },
@@ -58,81 +47,150 @@ const GAME_FILTERS: { id: GameId | 'all'; label: string }[] = [
   { id: 'overwatch', label: 'Overwatch' },
 ];
 
+// --- Helpers de mapeo -------------------------------------------------------
+
+function detectGame(name: string, info: string | null): { gameId: GameId; gameName: string } {
+  const txt = `${name} ${info ?? ''}`.toLowerCase();
+
+  if (txt.includes('valorant')) {
+    return { gameId: 'valorant', gameName: 'Valorant' };
+  }
+  if (txt.includes('cs2') || txt.includes('counter')) {
+    return { gameId: 'cs2', gameName: 'CS2' };
+  }
+  if (txt.includes('tft') || txt.includes('teamfight')) {
+    return { gameId: 'tft', gameName: 'TFT' };
+  }
+  if (txt.includes('overwatch')) {
+    return { gameId: 'overwatch', gameName: 'Overwatch' };
+  }
+
+  // Default
+  return { gameId: 'lol', gameName: 'League of Legends' };
+}
+
+function mapDtoToCommunity(dto: CommunityDTO): Community {
+  const { gameId, gameName } = detectGame(dto.name, dto.info ?? null);
+
+  return {
+    id: dto.id,
+    name: dto.name,
+    description: dto.info ?? '',
+    gameId,
+    gameName,
+    extraGames: [],
+    members: 1, // hasta que el backend devuelva un contador real
+    logoInitials: dto.name.substring(0, 2).toUpperCase(),
+    logoUrl: undefined,
+  };
+}
+
+// --- Componente principal ---------------------------------------------------
+
 export default function CommunitiesPage() {
   const router = useRouter();
 
-  // Comunidades creadas por el usuario (derivadas de joinedCommunities)
-  const [userCommunities, setUserCommunities] = useState<Community[]>([]);
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [myCommunities, setMyCommunities] = useState<MyCommunityDTO[]>([]);
+
   const [search, setSearch] = useState('');
   const [gameFilter, setGameFilter] = useState<GameId | 'all'>('all');
 
-  // Modal
   const [showModal, setShowModal] = useState(false);
   const [editingCommunity, setEditingCommunity] = useState<Community | null>(null);
 
-  // Campos del formulario de la modal
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formLogoUrl, setFormLogoUrl] = useState('');
   const [formGames, setFormGames] = useState<GameId[]>([]);
 
-  // ========== CARGA DESDE joinedCommunities ==========
+  const [loading, setLoading] = useState(false);
+
+  // -------------------- Carga inicial desde backend -------------------------
+
+  async function loadCommunities() {
+    try {
+      setLoading(true);
+      const res: CommunityListDTO = await apiService.getCommunities();
+      const mapped = res.items.map(mapDtoToCommunity);
+      setCommunities(mapped);
+    } catch (err) {
+      console.error('Error al obtener comunidades:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadMyCommunities() {
+    try {
+      const mine: MyCommunityDTO[] = await apiService.getMyCommunities();
+      setMyCommunities(mine);
+
+      // Sincronizamos con localStorage para que la pantalla de mensajes
+      // siga funcionando como antes (joinedCommunities).
+      if (typeof window !== 'undefined') {
+        const joined: JoinedCommunity[] = mine.map((c) => {
+          const { gameId, gameName } = detectGame(c.name, c.info ?? null);
+          return {
+            id: c.id,
+            name: c.name,
+            description: c.info ?? '',
+            gameId,
+            gameName,
+            extraGames: [],
+            members: 1,
+            logoInitials: c.name.substring(0, 2).toUpperCase(),
+            logoUrl: undefined,
+          };
+        });
+        localStorage.setItem('joinedCommunities', JSON.stringify(joined));
+      }
+    } catch (err) {
+      console.error('Error al obtener mis comunidades:', err);
+    }
+  }
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const raw = localStorage.getItem('joinedCommunities');
-    if (!raw) {
-      setUserCommunities([]);
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(raw) as JoinedCommunity[];
-
-      // Solo las creadas por mí y que tengan datos de comunidad
-      const mine = parsed.filter(
-        (c) => c && c.createdBy === CURRENT_USER_ID && c.gameId
-      );
-
-      const mapped: Community[] = mine.map((c, idx) => {
-        const name = (c.name || 'Comunidad').toString().trim();
-        const primaryGameId: GameId = (c.gameId as GameId) || 'lol';
-        const primaryGame =
-          GAME_FILTERS.find((g) => g.id === primaryGameId) || GAME_FILTERS[1];
-
-        return {
-          id:
-            typeof c.id === 'number'
-              ? c.id
-              : MOCK_COMMUNITIES.length + idx + 1,
-          name,
-          description: (c.description || '').toString(),
-          logoUrl: c.logoUrl || undefined,
-          logoInitials:
-            c.logoInitials ||
-            name.substring(0, 2).toUpperCase(),
-          gameId: primaryGame.id as GameId,
-          gameName: primaryGame.label,
-          extraGames: (c.extraGames as GameId[] | undefined) || [],
-          members:
-            typeof c.members === 'number' ? c.members : 1,
-          createdBy: CURRENT_USER_ID,
-        };
-      });
-
-      setUserCommunities(mapped);
-    } catch {
-      setUserCommunities([]);
-    }
+    loadCommunities();
+    loadMyCommunities();
   }, []);
 
-  // Todas las comunidades: las fijas + las mías
-  const communities = useMemo(
-    () => [...MOCK_COMMUNITIES, ...userCommunities],
-    [userCommunities]
-  );
+  // -------------------- Helpers de membership -------------------------------
 
-  // ========== FILTRO ==========
+  function getMembership(communityId: number) {
+    return myCommunities.find((c) => c.id === communityId);
+  }
+
+  function syncJoinedLocalAdd(community: Community) {
+    if (typeof window === 'undefined') return;
+    const raw = localStorage.getItem('joinedCommunities');
+    const joined: JoinedCommunity[] = raw ? JSON.parse(raw) : [];
+    if (!joined.some((c) => c.id === community.id)) {
+      joined.push({
+        id: community.id,
+        name: community.name,
+        description: community.description,
+        gameId: community.gameId,
+        gameName: community.gameName,
+        extraGames: community.extraGames,
+        members: community.members,
+        logoInitials: community.logoInitials,
+        logoUrl: community.logoUrl,
+      });
+      localStorage.setItem('joinedCommunities', JSON.stringify(joined));
+    }
+  }
+
+  function syncJoinedLocalRemove(id: number) {
+    if (typeof window === 'undefined') return;
+    const raw = localStorage.getItem('joinedCommunities');
+    if (!raw) return;
+    const joined: JoinedCommunity[] = JSON.parse(raw);
+    const filtered = joined.filter((c) => c.id !== id);
+    localStorage.setItem('joinedCommunities', JSON.stringify(filtered));
+  }
+
+  // -------------------- Filtros ---------------------------------------------
 
   const filteredCommunities = useMemo(() => {
     return communities.filter((c) => {
@@ -161,7 +219,7 @@ export default function CommunitiesPage() {
     });
   }, [communities, search, gameFilter]);
 
-  // ========== MODAL CREAR / EDITAR ==========
+  // -------------------- Modal Crear / Editar --------------------------------
 
   const openCreateModal = () => {
     setEditingCommunity(null);
@@ -177,10 +235,7 @@ export default function CommunitiesPage() {
     setFormName(community.name);
     setFormDescription(community.description);
     setFormLogoUrl(community.logoUrl || '');
-    const games: GameId[] = [
-      community.gameId,
-      ...(community.extraGames ?? []),
-    ];
+    const games: GameId[] = [community.gameId, ...(community.extraGames ?? [])];
     setFormGames(games);
     setShowModal(true);
   };
@@ -193,9 +248,9 @@ export default function CommunitiesPage() {
     );
   };
 
-  // ========== GUARDAR COMUNIDAD (crear / editar) ==========
+  // -------------------- Guardar comunidad (crear / editar) ------------------
 
-  const handleSubmitCommunity = (e: React.FormEvent) => {
+  const handleSubmitCommunity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim()) return;
     if (formGames.length === 0) return;
@@ -206,28 +261,19 @@ export default function CommunitiesPage() {
 
     if (!primaryGame || primaryGame.id === 'all') return;
 
-    if (editingCommunity) {
-      // EDITAR EXISTENTE
-      setUserCommunities((prev) => {
-        const updated = prev.map((c) =>
-          c.id === editingCommunity.id
-            ? {
-                ...c,
-                name: formName.trim(),
-                description: formDescription.trim(),
-                logoUrl: formLogoUrl.trim() || undefined,
-                gameId: primaryGameId,
-                gameName: primaryGame.label,
-                extraGames,
-              }
-            : c
-        );
+    try {
+      if (editingCommunity) {
+        // EDITAR
+        await apiService.updateCommunity(editingCommunity.id, {
+          name: formName.trim(),
+          info: formDescription.trim() || null,
+          is_public: true,
+          game_ids: [], // por ahora no lo usamos en backend
+        });
 
-        // Actualizar también en joinedCommunities
-        if (typeof window !== 'undefined') {
-          const raw = localStorage.getItem('joinedCommunities');
-          const joined: JoinedCommunity[] = raw ? JSON.parse(raw) : [];
-          const joinedUpdated = joined.map((c) =>
+        // Actualizamos en memoria para no esperar al fetch
+        setCommunities((prev) =>
+          prev.map((c) =>
             c.id === editingCommunity.id
               ? {
                   ...c,
@@ -237,86 +283,98 @@ export default function CommunitiesPage() {
                   gameId: primaryGameId,
                   gameName: primaryGame.label,
                   extraGames,
-                  createdBy: CURRENT_USER_ID,
                 }
               : c
-          );
-          localStorage.setItem(
-            'joinedCommunities',
-            JSON.stringify(joinedUpdated)
-          );
-        }
+          )
+        );
 
-        return updated;
-      });
-    } else {
-      // CREAR NUEVA
-      const newId =
-        communities.reduce((max, c) => Math.max(max, c.id), 0) + 1;
-
-      const newCommunity: Community = {
-        id: newId,
-        name: formName.trim(),
-        description: formDescription.trim(),
-        logoUrl: formLogoUrl.trim() || undefined,
-        logoInitials: formName.trim().substring(0, 2).toUpperCase(),
-        gameId: primaryGameId,
-        gameName: primaryGame.label,
-        extraGames,
-        members: 1,
-        createdBy: CURRENT_USER_ID,
-      };
-
-      // 1) Guardar en estado
-      setUserCommunities((prev) => [...prev, newCommunity]);
-
-      // 2) Guardar en joinedCommunities (origen compartido con Mensajes)
-      if (typeof window !== 'undefined') {
-        const raw = localStorage.getItem('joinedCommunities');
-        const joined: JoinedCommunity[] = raw ? JSON.parse(raw) : [];
-        joined.push({
-          ...newCommunity,
+        await loadMyCommunities();
+      } else {
+        // CREAR
+        const createdDto = await apiService.createCommunity({
+          name: formName.trim(),
+          info: formDescription.trim() || null,
+          is_public: true,
+          game_ids: [],
         });
-        localStorage.setItem('joinedCommunities', JSON.stringify(joined));
-      }
 
-      // 3) Abrir chat de esa comunidad
+        const newCommunity: Community = {
+          id: createdDto.id,
+          name: createdDto.name,
+          description: createdDto.info ?? '',
+          gameId: primaryGameId,
+          gameName: primaryGame.label,
+          extraGames,
+          members: 1,
+          logoInitials: createdDto.name.substring(0, 2).toUpperCase(),
+          logoUrl: formLogoUrl.trim() || undefined,
+        };
+
+        setCommunities((prev) => [...prev, newCommunity]);
+        await loadMyCommunities();
+        syncJoinedLocalAdd(newCommunity);
+
+        router.push(
+          `/messages?communityId=${newCommunity.id}&communityName=${encodeURIComponent(
+            newCommunity.name
+          )}`
+        );
+      }
+    } catch (err) {
+      console.error('Error al guardar comunidad:', err);
+    } finally {
+      setShowModal(false);
+    }
+  };
+
+  // -------------------- Unirse / salir / eliminar ---------------------------
+
+  const handleJoinCommunity = async (community: Community) => {
+    const membership = getMembership(community.id);
+
+    // Si ya soy miembro, voy directo a mensajes
+    if (membership) {
       router.push(
-        `/messages?communityId=${newCommunity.id}&communityName=${encodeURIComponent(
-          newCommunity.name
+        `/messages?communityId=${community.id}&communityName=${encodeURIComponent(
+          community.name
         )}`
       );
+      return;
     }
 
-    setShowModal(false);
+    try {
+      await apiService.joinCommunity(community.id);
+      await loadMyCommunities();
+      syncJoinedLocalAdd(community);
+
+      router.push(
+        `/messages?communityId=${community.id}&communityName=${encodeURIComponent(
+          community.name
+        )}`
+      );
+    } catch (err) {
+      console.error('Error al unirse a comunidad:', err);
+    }
   };
 
-  // ========== UNIRSE A COMUNIDAD EXISTENTE ==========
-
-  const handleJoinCommunity = (community: Community) => {
-    if (typeof window !== 'undefined') {
-      const raw = localStorage.getItem('joinedCommunities');
-      const joined: JoinedCommunity[] = raw ? JSON.parse(raw) : [];
-
-      if (!joined.some((c) => c.id === community.id)) {
-        joined.push({
-          ...community,
-          createdBy: community.createdBy || 'system',
-        });
-        localStorage.setItem('joinedCommunities', JSON.stringify(joined));
-      }
+  const handleLeaveCommunity = async (community: Community) => {
+    if (
+      typeof window !== 'undefined' &&
+      !window.confirm('¿Salir de esta comunidad?')
+    ) {
+      return;
     }
 
-    router.push(
-      `/messages?communityId=${community.id}&communityName=${encodeURIComponent(
-        community.name
-      )}`
-    );
+    try {
+      await apiService.leaveCommunity(community.id);
+      await loadMyCommunities();
+      syncJoinedLocalRemove(community.id);
+    } catch (err) {
+      console.error('Error al salir de comunidad:', err);
+    }
   };
 
-  // ========== ELIMINAR COMUNIDAD CREADA POR MÍ ==========
-
-  const handleDeleteCommunity = (community: Community) => {
+  const handleDeleteCommunity = async (community: Community) => {
     if (
       typeof window !== 'undefined' &&
       !window.confirm(
@@ -326,17 +384,17 @@ export default function CommunitiesPage() {
       return;
     }
 
-    setUserCommunities((prev) => prev.filter((c) => c.id !== community.id));
-
-    if (typeof window !== 'undefined') {
-      const raw = localStorage.getItem('joinedCommunities');
-      const joined: JoinedCommunity[] = raw ? JSON.parse(raw) : [];
-      const filtered = joined.filter((c) => c.id !== community.id);
-      localStorage.setItem('joinedCommunities', JSON.stringify(filtered));
+    try {
+      await apiService.deleteCommunity(community.id);
+      setCommunities((prev) => prev.filter((c) => c.id !== community.id));
+      await loadMyCommunities();
+      syncJoinedLocalRemove(community.id);
+    } catch (err) {
+      console.error('Error al eliminar comunidad:', err);
     }
   };
 
-  // ========== RENDER ==========
+  // -------------------- Render ---------------------------------------------
 
   return (
     <main className={styles.page}>
@@ -402,8 +460,7 @@ export default function CommunitiesPage() {
             <div className={styles.panel}>
               <h2 className={styles.panelTitle}>Crear una comunidad</h2>
               <p className={styles.panelText}>
-                Creá un grupo para tu juego o stack habitual. Después lo vamos a
-                conectar al backend para que quede persistido.
+                Creá un grupo para tu juego o stack habitual. Se guarda en el backend de DuoFinder.
               </p>
 
               <button
@@ -419,120 +476,134 @@ export default function CommunitiesPage() {
           {/* Columna derecha: lista */}
           <div className={styles.rightCol}>
             <div className={styles.listHeader}>
-              <h2 className={styles.panelTitle}>Comunidades destacadas</h2>
+              <h2 className={styles.panelTitle}>Comunidades</h2>
               <span className={styles.resultCount}>
                 {filteredCommunities.length} resultado
                 {filteredCommunities.length === 1 ? '' : 's'}
               </span>
             </div>
 
-            <div className={styles.communityGrid}>
-              {filteredCommunities.map((community) => {
-                const allGameLabels = [
-                  community.gameName,
-                  ...(community.extraGames
-                    ? community.extraGames
-                        .map(
-                          (g) =>
-                            GAME_FILTERS.find((gf) => gf.id === g)?.label ||
-                            ''
-                        )
-                        .filter(Boolean)
-                    : []),
-                ].join(' • ');
+            {loading && communities.length === 0 ? (
+              <div className={styles.emptyState}>
+                <p>Cargando comunidades…</p>
+              </div>
+            ) : (
+              <div className={styles.communityGrid}>
+                {filteredCommunities.map((community) => {
+                  const allGameLabels = [
+                    community.gameName,
+                    ...(community.extraGames
+                      ? community.extraGames
+                          .map(
+                            (g) =>
+                              GAME_FILTERS.find((gf) => gf.id === g)?.label ||
+                              ''
+                          )
+                          .filter(Boolean)
+                      : []),
+                  ].join(' • ');
 
-                const isOwner =
-                  !community.createdBy ||
-                  community.createdBy === CURRENT_USER_ID;
+                  const membership = getMembership(community.id);
+                  const isMember = !!membership;
+                  const isOwner = membership?.role === 'owner';
 
-                return (
-                  <article
-                    key={community.id}
-                    className={styles.communityCard}
-                  >
-                    {/* Logo / imagen */}
-                    <div className={styles.communityLogoWrapper}>
-                      {community.logoUrl ? (
-                        <Image
-                          src={community.logoUrl}
-                          alt={community.name}
-                          width={56}
-                          height={56}
-                          className={styles.communityLogoImage}
-                        />
-                      ) : (
-                        <div className={styles.communityLogo}>
-                          <span className={styles.communityLogoText}>
-                            {community.logoInitials}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className={styles.communityInfo}>
-                      <h3 className={styles.communityName}>
-                        {community.name}
-                      </h3>
-                      <div className={styles.communityMeta}>
-                        <span className={styles.metaTag}>
-                          {allGameLabels}
-                        </span>
-                        <span className={styles.metaTag}>
-                          {community.members} miembro
-                          {community.members !== 1 ? 's' : ''}
-                        </span>
-                        {isOwner && (
-                          <span className={styles.ownerTag}>
-                            CREADOR
-                          </span>
+                  return (
+                    <article
+                      key={community.id}
+                      className={styles.communityCard}
+                    >
+                      {/* Logo / imagen */}
+                      <div className={styles.communityLogoWrapper}>
+                        {community.logoUrl ? (
+                          <Image
+                            src={community.logoUrl}
+                            alt={community.name}
+                            width={56}
+                            height={56}
+                            className={styles.communityLogoImage}
+                          />
+                        ) : (
+                          <div className={styles.communityLogo}>
+                            <span className={styles.communityLogoText}>
+                              {community.logoInitials}
+                            </span>
+                          </div>
                         )}
                       </div>
-                      <p className={styles.communityDescription}>
-                        {community.description}
-                      </p>
-                    </div>
 
-                    {/* Acción */}
-                    <div className={styles.communityActions}>
-                      <button
-                        type="button"
-                        className={styles.joinBtn}
-                        onClick={() => handleJoinCommunity(community)}
-                      >
-                        Unirme
-                      </button>
+                      {/* Info */}
+                      <div className={styles.communityInfo}>
+                        <h3 className={styles.communityName}>
+                          {community.name}
+                        </h3>
+                        <div className={styles.communityMeta}>
+                          <span className={styles.metaTag}>
+                            {allGameLabels}
+                          </span>
+                          <span className={styles.metaTag}>
+                            {community.members} miembro
+                            {community.members !== 1 ? 's' : ''}
+                          </span>
+                          {isOwner && (
+                            <span className={styles.ownerTag}>CREADOR</span>
+                          )}
+                        </div>
+                        <p className={styles.communityDescription}>
+                          {community.description}
+                        </p>
+                      </div>
 
-                      {isOwner && (
-                        <>
+                      {/* Acción */}
+                      <div className={styles.communityActions}>
+                        <button
+                          type="button"
+                          className={styles.joinBtn}
+                          onClick={() => handleJoinCommunity(community)}
+                        >
+                          {isMember ? 'Ir al chat' : 'Unirme'}
+                        </button>
+
+                        {isMember && !isOwner && (
                           <button
                             type="button"
                             className={styles.smallBtn}
-                            onClick={() => openEditModal(community)}
+                            onClick={() => handleLeaveCommunity(community)}
                           >
-                            Editar
+                            Salir
                           </button>
-                          <button
-                            type="button"
-                            className={styles.smallDangerBtn}
-                            onClick={() => handleDeleteCommunity(community)}
-                          >
-                            Eliminar
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </article>
-                );
-              })}
+                        )}
 
-              {filteredCommunities.length === 0 && (
-                <div className={styles.emptyState}>
-                  <p>No encontramos comunidades con ese filtro.</p>
-                  <p>Probá con otro juego o creá una nueva comunidad.</p>
-                </div>
-              )}
-            </div>
+                        {isOwner && (
+                          <>
+                            <button
+                              type="button"
+                              className={styles.smallBtn}
+                              onClick={() => openEditModal(community)}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.smallDangerBtn}
+                              onClick={() => handleDeleteCommunity(community)}
+                            >
+                              Eliminar
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+
+                {filteredCommunities.length === 0 && !loading && (
+                  <div className={styles.emptyState}>
+                    <p>No encontramos comunidades con ese filtro.</p>
+                    <p>Probá con otro juego o creá una nueva comunidad.</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </section>
       </div>
