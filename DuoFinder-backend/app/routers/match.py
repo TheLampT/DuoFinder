@@ -120,8 +120,16 @@ def get_match_suggestions(
             User.IsActive == True,
             ~exists().where(
                 or_(
-                    and_(Matches.UserID1 == my_id, Matches.UserID2 == User.ID),
-                    and_(Matches.UserID2 == my_id, Matches.UserID1 == User.ID),
+                    and_(
+                        Matches.UserID1 == my_id,
+                        Matches.UserID2 == User.ID,
+                        Matches.LikedByUser1.isnot(None)
+                    ),
+                    and_(
+                        Matches.UserID2 == my_id,
+                        Matches.UserID1 == User.ID,
+                        Matches.LikedByUser2.isnot(None)
+                    )
                 )
             ),
         )
