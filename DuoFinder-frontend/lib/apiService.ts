@@ -414,7 +414,7 @@ export const apiService = {
     return response.json();
   },
 
-  // ======================
+    // ======================
   // COMMUNITIES (BACKEND)
   // ======================
 
@@ -449,7 +449,7 @@ export const apiService = {
     return response.json();
   },
 
-  /** POST /communities/community */
+  /** POST /communities/communities */
   createCommunity: async (data: {
     name: string;
     info?: string | null;
@@ -464,7 +464,7 @@ export const apiService = {
       game_ids: data.game_ids ?? undefined,
     };
 
-    const response = await authFetch('/communities/community', {
+    const response = await authFetch('/communities/communities', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -475,7 +475,7 @@ export const apiService = {
       throw new Error(body.detail || `Error al crear comunidad (${response.status})`);
     }
 
-    return body;
+    return body as CommunityDTO;
   },
 
   /** PUT /communities/communities/{id} */
@@ -500,7 +500,7 @@ export const apiService = {
       throw new Error(body.detail || `Error al actualizar comunidad (${response.status})`);
     }
 
-    return body;
+    return body as CommunityDTO;
   },
 
   /** DELETE /communities/communities/{id} */
@@ -515,13 +515,33 @@ export const apiService = {
     }
   },
 
-  /** MOCK: leave */
-  leaveCommunity: async () => {
-    console.log("leaveCommunity (sin endpoint)");
+  /** POST /communities/communities/{id}/leave */
+  leaveCommunity: async (id: number): Promise<{ message: string }> => {
+    const response = await authFetch(`/communities/communities/${id}/leave`, {
+      method: 'POST',
+    });
+
+    const body = await response.json().catch(() => ({} as unknown));
+
+    if (!response.ok) {
+      throw new Error(body.detail || `Error al salir de la comunidad (${response.status})`);
+    }
+
+    return body as { message: string };
   },
 
-  /** MOCK: join */
-  joinCommunity: async () => {
-    console.log("joinCommunity (sin endpoint)");
+  /** POST /communities/communities/{id}/join */
+  joinCommunity: async (id: number): Promise<{ message: string }> => {
+    const response = await authFetch(`/communities/communities/${id}/join`, {
+      method: 'POST',
+    });
+
+    const body = await response.json().catch(() => ({} as unknown));
+
+    if (!response.ok) {
+      throw new Error(body.detail || `Error al unirse a la comunidad (${response.status})`);
+    }
+
+    return body as { message: string };
   },
 };

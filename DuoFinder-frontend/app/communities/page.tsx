@@ -343,7 +343,7 @@ export default function CommunitiesPage() {
     }
 
     try {
-      await apiService.joinCommunity();
+      await apiService.joinCommunity(community.id);
       await loadMyCommunities();
       syncJoinedLocalAdd(community);
 
@@ -357,7 +357,8 @@ export default function CommunitiesPage() {
     }
   };
 
-  const handleLeaveCommunity = async (community: Community) => {
+
+ const handleLeaveCommunity = async (community: Community) => {
     if (
       typeof window !== 'undefined' &&
       !window.confirm('¿Salir de esta comunidad?')
@@ -366,14 +367,13 @@ export default function CommunitiesPage() {
     }
 
     try {
-      await apiService.leaveCommunity();
+      await apiService.leaveCommunity(community.id);
       await loadMyCommunities();
       syncJoinedLocalRemove(community.id);
     } catch (err) {
       console.error('Error al salir de comunidad:', err);
     }
   };
-
   const handleDeleteCommunity = async (community: Community) => {
     if (
       typeof window !== 'undefined' &&
