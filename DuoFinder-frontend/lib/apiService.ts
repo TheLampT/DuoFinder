@@ -7,14 +7,18 @@ import {
   SwipeInput,
   UpdateProfileRequest,
   UpdateProfileResponse,
-  Match,
-  Chat,
-  UserPreferences,
+  Match ,
+  Chat ,
+  UserPreferences ,
+  Message,
+  ChatListItem, 
+  ChatMessage, 
+  FrontendMessage,
+  FrontendChat  ,
 } from './types';
 
-// ========================
-// Tipos para comunidades
-// ========================
+// ======================= TIPOS DE COMUNIDADES =======================
+
 export interface CommunityDTO {
   id: number;
   name: string;
@@ -34,9 +38,11 @@ export interface CommunityListDTO {
   offset: number;
 }
 
-// ========================
-// Servicio principal
-// ========================
+// prefijo REAL del backend (por los archivos communitys.py)
+const COMMUNITY_BASE = '/community';
+
+// ======================= API SERVICE =======================
+
 export const apiService = {
   // === USER PROFILE ===
   getProfile: async (): Promise<UserProfile> => {
@@ -146,7 +152,32 @@ export const apiService = {
     return response.json();
   },
 
-  getPreferences: async (): Promise<UserPreferences> => {
+  // Enviar un mensaje
+  sendMessage: async (matchId: number, content: string): Promise<Message> => {
+    const response = await authFetch(`/chats/${matchId}`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Error sending message');
+    }
+
+    return response.json();
+  },
+
+  // Obtener información de un match específico
+  getMatchDetails: async (matchId: number): Promise<Match> => {
+    const response = await authFetch(`/matches/${matchId}`);
+    
+    if (!response.ok) {
+      throw new Error('Error fetching match details');
+    }
+
+    return response.json();
+  },
+
+  getPreferences: async (): Promise<UserPreferences> => { // Define UserPreferences
     const response = await authFetch('/preferences');
     
     if (!response.ok) {
