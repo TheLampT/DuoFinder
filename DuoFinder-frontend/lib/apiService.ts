@@ -13,7 +13,7 @@ import {
   ChatListItem, 
   ChatMessage, 
   FrontendMessage,
-  FrontendChat 
+  FrontendChat  ,
 } from './types';
 
 export interface CommunityDTO {
