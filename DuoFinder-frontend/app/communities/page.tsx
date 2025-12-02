@@ -343,7 +343,7 @@ export default function CommunitiesPage() {
     }
 
     try {
-      await apiService.joinCommunity(community.id);
+      await apiService.joinCommunity();
       await loadMyCommunities();
       syncJoinedLocalAdd(community);
 
@@ -366,7 +366,7 @@ export default function CommunitiesPage() {
     }
 
     try {
-      await apiService.leaveCommunity(community.id);
+      await apiService.leaveCommunity();
       await loadMyCommunities();
       syncJoinedLocalRemove(community.id);
     } catch (err) {
