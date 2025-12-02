@@ -10,8 +10,25 @@ import type {
   FrontendChat,
   FrontendMessage,
   JoinedCommunity,
-  CommunityMessages
+  CommunityMessages,
+  ApiMatchResponse
 } from './message.types';
+
+const useIsMobile = () => {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+      const checkIsMobile = () => {
+        setIsMobile(window.innerWidth < 768);
+      };
+
+      checkIsMobile();
+      window.addEventListener('resize', checkIsMobile);
+      return () => window.removeEventListener('resize', checkIsMobile);
+    }, []);
+
+    return isMobile;
+  };
 
 const MessagesPage = () => {
   const [matches, setMatches] = useState<FrontendChat[]>([]);
@@ -21,10 +38,11 @@ const MessagesPage = () => {
   const [showProfile, setShowProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isMobile, setIsMobile] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
   const router = useRouter();
+
+  const isMobile = useIsMobile();
 
   // Cargar todos los matches y su información de chat
   const loadMatchesWithChatInfo = useCallback(async () => {
@@ -32,7 +50,7 @@ const MessagesPage = () => {
       setLoading(true);
       
       // 1. Obtener todos los matches del usuario
-      let apiMatches: any[] = [];
+      let apiMatches: ApiMatchResponse[] = [];
       try {
         apiMatches = await chatService.getAllMatches();
         console.log('Matches obtenidos:', apiMatches);

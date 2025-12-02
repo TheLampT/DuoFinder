@@ -11,12 +11,11 @@ import {
   Chat ,
   UserPreferences ,
   Message,
-  ChatListItem,
   FrontendMessage,
   FrontendChat
 } from './types';
 
-import { ApiMessageResponse } from '@/app/messages/message.types'
+import { ApiMatchResponse, ApiMessageResponse } from '@/app/messages/message.types'
 
 // ======================= TIPOS DE COMUNIDADES =======================
 
@@ -43,7 +42,7 @@ export interface CommunityListDTO {
 // ======================= CHAT SERVICE =======================
 export const chatService = {
   // Obtener todos los matches del usuario
-  getAllMatches: async (): Promise<any[]> => {
+  getAllMatches: async (): Promise<ApiMatchResponse[]> => {
     const response = await authFetch('/matches/matches');
     
     if (!response.ok) {
@@ -93,7 +92,7 @@ export const chatService = {
     }
     
     // Asegurarnos de que siempre trabajamos con un array
-    let messagesArray: any[] = [];
+    let messagesArray: ApiMessageResponse[] = [];
     
     if (Array.isArray(data)) {
       messagesArray = data;
@@ -148,7 +147,7 @@ export const chatService = {
 
   // Función para combinar información del match con información del chat
   combineMatchAndChatInfo: (
-    matchData: any, 
+    matchData: ApiMatchResponse, 
     chatInfo: {
       partner_id: number;
       partner_username: string;
@@ -192,12 +191,8 @@ export const chatService = {
         age: otherUserFromMatch.age,
         bio: otherUserFromMatch.bio || '',
         avatar: otherUserFromMatch.avatar || '/default-avatar.png',
-        gamePreferences: otherUserFromMatch.gamePreferences || otherUserFromMatch.game_preferences || [],
-        onlineStatus: otherUserFromMatch.online_status || otherUserFromMatch.onlineStatus || false,
         lastOnline: otherUserFromMatch.last_online,
-        location: otherUserFromMatch.location || '',
-        skillLevel: otherUserFromMatch.skill_level || otherUserFromMatch.skillLevel || '',
-        favoriteGames: otherUserFromMatch.favoriteGames || otherUserFromMatch.favorite_games || []
+        location: otherUserFromMatch.location || ''
       }
     };
   }
