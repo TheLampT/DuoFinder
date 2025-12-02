@@ -126,16 +126,28 @@ export interface ApiError {
 
 export interface Match {
   id: number;
-  user_id: number;
-  username: string;
-  // ... otras propiedades
+  user1_id: number;
+  user2_id: number;
+  match_date: string;
+  other_user?: UserProfile;
+  last_message?: Message;
+  unread_count?: number;
+}
+
+export interface Message {
+  id: number;
+  match_id: number;
+  sender_id: number;
+  content: string;
+  created_at: string;
+  read: boolean;
 }
 
 export interface Chat {
-  id: number;
   match_id: number;
-  content: string;
-  // ... otras propiedades
+  other_user: UserProfile;
+  last_message?: Message;
+  unread_count: number;
 }
 
 export interface UserPreferences {
@@ -146,4 +158,88 @@ export interface UserPreferences {
     max: number;
   };
   // ... otras preferencias
+}
+
+export interface ChatMessage {
+  id: number;
+  match_id: number;
+  sender_id: number;
+  content: string;
+  created_at: string;
+  read: boolean;
+}
+
+export interface ChatListItem {
+  match_id: number;
+  other_user: {
+    id: number;
+    name: string;
+    username: string;
+    avatar: string;
+    age?: number;
+    bio?: string;
+    onlineStatus?: boolean;
+    location?: string;
+    skillLevel?: string;
+    gamePreferences?: string[];
+    favoriteGames?: string[];
+  };
+  last_message?: {
+    id: number;
+    match_id: number;
+    sender_id: number;
+    content: string;
+    created_at: string;
+    read: boolean;
+  };
+  unread_count: number;
+}
+
+// Para matches
+export interface Match {
+  id: number;
+  user1_id: number;
+  user2_id: number;
+  match_date: string;
+  status?: string;
+}
+
+export interface ApiMessage {
+  id: number;
+  MatchesID: number;
+  SenderID: number;
+  ContentChat: string;
+  CreatedDate: string;
+  Status?: string;
+  ReadChat: boolean;
+}
+
+export interface ApiMatch {
+  ID: number;
+  UserID1: number;
+  UserID2: number;
+  MatchDate: string;
+  Status?: string;
+}
+
+// Para usar en el frontend (compatible con ambos)
+export interface FrontendMessage {
+  id: number;
+  match_id: number;
+  sender_id: number;
+  content: string;
+  created_at: string;
+  read: boolean;
+}
+
+export interface FrontendChat {
+  id: string;
+  matchId: number;
+  userId: number;
+  matchedOn: string;
+  lastMessage?: FrontendMessage;
+  unreadCount: number;
+  user: UserProfile;
+  isCommunity?: boolean;
+  communityId?: number;
 }

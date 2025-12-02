@@ -6,12 +6,15 @@ import {
   SwipeInput,
   UpdateProfileRequest,
   UpdateProfileResponse,
-  Match,
-  Chat,
-  UserPreferences,
+  Match ,
+  Chat ,
+  UserPreferences ,
+  Message,
+  ChatListItem, 
+  ChatMessage, 
+  FrontendMessage,
+  FrontendChat 
 } from './types';
-
-// ======================= TIPOS DE COMUNIDADES =======================
 
 export interface CommunityDTO {
   id: number;
@@ -36,6 +39,62 @@ export interface CommunityListDTO {
 const COMMUNITY_BASE = '/community';
 
 // ======================= API SERVICE =======================
+
+export const chatService = {
+  // Obtener lista de chats
+  getChats: async (): Promise<any[]> => {
+    const response = await authFetch('/chats');
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Error fetching chats');
+    }
+
+    return await response.json();
+  },
+
+  // Obtener mensajes de un chat
+  getChatMessages: async (matchId: number): Promise<any[]> => {
+    const response = await authFetch(`/chats/${matchId}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Error fetching messages');
+    }
+
+    return await response.json();
+  },
+
+  // Enviar mensaje
+  sendMessage: async (matchId: number, content: string): Promise<any> => {
+    const response = await authFetch(`/chats/${matchId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ content }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Error sending message');
+    }
+
+    return await response.json();
+  },
+
+  // Marcar mensajes como leídos
+  markMessagesAsRead: async (matchId: number): Promise<void> => {
+    const response = await authFetch(`/chats/${matchId}/read`, {
+      method: 'PUT',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Error marking messages as read');
+    }
+  }
+};
 
 export const apiService = {
   // === USER PROFILE ===
@@ -150,6 +209,31 @@ export const apiService = {
 
     if (!response.ok) {
       throw new Error('Error updating preferences');
+    }
+
+    return response.json();
+  },
+
+  // Enviar un mensaje
+  sendMessage: async (matchId: number, content: string): Promise<Message> => {
+    const response = await authFetch(`/chats/${matchId}`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Error sending message');
+    }
+
+    return response.json();
+  },
+
+  // Obtener información de un match específico
+  getMatchDetails: async (matchId: number): Promise<Match> => {
+    const response = await authFetch(`/matches/${matchId}`);
+    
+    if (!response.ok) {
+      throw new Error('Error fetching match details');
     }
 
     return response.json();
