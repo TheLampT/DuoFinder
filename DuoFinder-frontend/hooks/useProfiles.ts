@@ -1,5 +1,5 @@
 // hooks/useProfiles.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Profile, Suggestion } from '@/lib/types';
 import { apiService } from '@/lib/apiService';
 
@@ -9,6 +9,8 @@ export const useProfiles = () => {
   const [error, setError] = useState<string | null>(null);
   const [skip, setSkip] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [lastResponseCount, setLastResponseCount] = useState<number>(0);
+  const loadingRef = useRef(false); // Para evitar doble carga
 
   // Transformar Suggestion a Profile
   const transformSuggestionToProfile = (suggestion: Suggestion): Profile => {
@@ -16,7 +18,7 @@ export const useProfiles = () => {
       id: suggestion.id,
       username: suggestion.username,
       age: suggestion.age,
-      image: suggestion.image,
+      image: suggestion.image || '/default-profile.png',
       bio: suggestion.bio,
       gameSkill: [{
         game: suggestion.game,
@@ -26,33 +28,69 @@ export const useProfiles = () => {
     };
   };
 
-  // Cargar más perfiles
+  // Cargar más perfiles con control de duplicados
   const loadMoreProfiles = useCallback(async () => {
-    if (loading || !hasMore) return;
-
+    if (loadingRef.current || !hasMore) return;
+    
+    loadingRef.current = true;
     setLoading(true);
     setError(null);
 
     try {
-        const suggestions = await apiService.getSuggestions(skip, 20);
-        
-        if (suggestions.length === 0) {
-        setHasMore(false);
-        } else {
-        const newProfiles = suggestions.map(transformSuggestionToProfile);
-        setProfiles(prev => [...prev, ...newProfiles]);
-        setSkip(prev => prev + suggestions.length);
-        }
-    } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error loading profiles');
-    } finally {
-        setLoading(false);
-    }
-    }, [skip, loading, hasMore]);
+      const suggestions = await apiService.getSuggestions(skip, 10); // Reducir a 10
+      
+      console.log('API Response:', {
+        skip,
+        received: suggestions.length,
+        hasIds: suggestions.map(s => s.id)
+      });
 
-  // Cargar perfiles iniciales
+      if (suggestions.length === 0) {
+        console.log('No more suggestions available');
+        setHasMore(false);
+        return;
+      }
+
+      // Filtrar duplicados por ID
+      const existingIds = new Set(profiles.map(p => p.id));
+      const newSuggestions = suggestions.filter(s => !existingIds.has(s.id));
+      
+      if (newSuggestions.length === 0) {
+        console.log('All received suggestions are duplicates');
+        setHasMore(false);
+        return;
+      }
+
+      const newProfiles = newSuggestions.map(transformSuggestionToProfile);
+      
+      setProfiles(prev => {
+        const updated = [...prev, ...newProfiles];
+        console.log(`Total profiles: ${updated.length}, New: ${newProfiles.length}`);
+        return updated;
+      });
+      
+      setSkip(prev => prev + newSuggestions.length);
+      setLastResponseCount(newSuggestions.length);
+      
+      // Si recibimos menos de lo solicitado, probablemente no hay más
+      if (newSuggestions.length < 10) {
+        console.log(`Received less than requested (${newSuggestions.length}/10), marking as no more`);
+        setHasMore(false);
+      }
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error loading profiles');
+      console.error('Error loading profiles:', err);
+    } finally {
+      setLoading(false);
+      loadingRef.current = false;
+    }
+  }, [skip, hasMore, profiles]);
+
+  // Cargar perfiles iniciales solo una vez
   useEffect(() => {
-    if (profiles.length === 0) {
+    if (profiles.length === 0 && !loading && hasMore) {
+      console.log('Initial load');
       loadMoreProfiles();
     }
   }, []);
@@ -60,7 +98,6 @@ export const useProfiles = () => {
   // Función para hacer swipe
   const swipeProfile = async (profileId: number, like: boolean) => {
     try {
-      // Encontrar el juego principal (puedes mejorar esta lógica)
       const profile = profiles.find(p => p.id === profileId);
       const mainGameId = profile?.gameSkill[0] ? 1 : undefined;
       
@@ -84,8 +121,9 @@ export const useProfiles = () => {
     setSkip(0);
     setHasMore(true);
     setError(null);
-    loadMoreProfiles();
-  }, [loadMoreProfiles]);
+    setLastResponseCount(0);
+    loadingRef.current = false;
+  }, []);
 
   return {
     profiles,
@@ -95,5 +133,6 @@ export const useProfiles = () => {
     loadMoreProfiles,
     swipeProfile,
     resetProfiles,
+    lastResponseCount,
   };
 };

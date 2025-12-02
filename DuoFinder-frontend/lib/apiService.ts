@@ -16,7 +16,7 @@ import {
   FrontendChat
 } from './types';
 
-import { ApiMessageResponse } from '@/app/messages/mssage.types'
+import { ApiMessageResponse } from '@/app/messages/message.types'
 
 // ======================= TIPOS DE COMUNIDADES =======================
 
@@ -42,43 +42,85 @@ export interface CommunityListDTO {
 
 // ======================= CHAT SERVICE =======================
 export const chatService = {
-  // Obtener lista de chats con información completa
-  getChats: async (): Promise<ChatListItem[]> => {
-    const response = await authFetch('/chats');
+  // Obtener todos los matches del usuario
+  getAllMatches: async (): Promise<any[]> => {
+    const response = await authFetch('/matches/matches');
     
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.detail || 'Error fetching chats');
+      throw new Error(errorData.detail || 'Error fetching matches');
+    }
+
+    const matches = await response.json();
+    return Array.isArray(matches) ? matches : [];
+  },
+
+  // Obtener información del chat para un match específico
+  getChatInfo: async (matchId: number): Promise<{
+    partner_id: number;
+    partner_username: string;
+    last_message?: string;
+    unread_count: number;
+  }> => {
+    const response = await authFetch(`/chats/chats/${matchId}/info`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Error fetching chat info');
     }
 
     return await response.json();
   },
 
-  // Obtener mensajes de un chat específico
+  // Obtener todos los mensajes de un chat específico
   getChatMessages: async (matchId: number): Promise<FrontendMessage[]> => {
-    const response = await authFetch(`/chats/${matchId}`);
+  try {
+    const response = await authFetch(`/chats/chats/${matchId}`);
     
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.detail || 'Error fetching messages');
     }
 
-    const messages = await response.json();
+    const data = await response.json();
+    
+    console.log(`Respuesta de /chats/${matchId}:`, data);
+    
+    // Si la respuesta es null o undefined, retornar array vacío
+    if (!data) {
+      console.warn(`Respuesta vacía de /chats/${matchId}`);
+      return [];
+    }
+    
+    // Asegurarnos de que siempre trabajamos con un array
+    let messagesArray: any[] = [];
+    
+    if (Array.isArray(data)) {
+      messagesArray = data;
+    } else {
+      // Si no es array, intentar convertirlo
+      console.warn(`Respuesta no es array, intentando convertir:`, typeof data);
+      messagesArray = [data];
+    }
     
     // Convertir de API a frontend
-    return messages.map((msg: ApiMessageResponse) => ({
-      id: msg.id || msg.id,
-      match_id: msg.match_id || msg.MatchesID,
-      sender_id: msg.sender_id || msg.SenderID,
-      content: msg.content || msg.ContentChat,
-      created_at: msg.created_at || msg.CreatedDate,
-      read: msg.read || msg.ReadChat || false
+    return messagesArray.map((msg: ApiMessageResponse) => ({
+      id: msg.id || 0,
+      match_id: msg.match_id || matchId,
+      sender_id: msg.sender_id || 0,
+      content: msg.content || '',
+      created_at: msg.created_at || new Date().toISOString(),
+      read: msg.read || true
     }));
-  },
+  } catch (error) {
+    console.error(`Error en getChatMessages para match ${matchId}:`, error);
+    throw error;
+  }
+},
 
   // Enviar mensaje
   sendMessage: async (matchId: number, content: string): Promise<FrontendMessage> => {
-    const response = await authFetch(`/chats/${matchId}`, {
+    const response = await authFetch(`/chats/chats/${matchId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -96,54 +138,66 @@ export const chatService = {
     // Convertir de API a frontend
     return {
       id: message.id || message.ID,
-      match_id: message.match_id || message.MatchesID,
-      sender_id: message.sender_id || message.SenderID,
-      content: message.content || message.ContentChat,
-      created_at: message.created_at || message.CreatedDate,
-      read: message.read || message.ReadChat || false
+      match_id: message.match_id || message.MatchesID || matchId,
+      sender_id: message.sender_id || message.SenderID || 0,
+      content: message.content || message.ContentChat || content,
+      created_at: message.created_at || message.CreatedDate || new Date().toISOString(),
+      read: message.read || message.ReadChat || true
     };
   },
 
-  // Marcar mensajes como leídos
-  markMessagesAsRead: async (matchId: number): Promise<void> => {
-    const response = await authFetch(`/chats/${matchId}/read`, {
-      method: 'PUT',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Error marking messages as read');
+  // Función para combinar información del match con información del chat
+  combineMatchAndChatInfo: (
+    matchData: any, 
+    chatInfo: {
+      partner_id: number;
+      partner_username: string;
+      last_message?: string;
+      unread_count: number;
     }
-  },
+  ): FrontendChat => {
+    // Determinar quién es el otro usuario
+    // Primero intentamos usar la info del chat (más confiable)
+    const partnerId = chatInfo.partner_id;
+    const partnerUsername = chatInfo.partner_username;
+    
+    // Si el match tiene información del otro usuario, la usamos como respaldo
+    const otherUserFromMatch = matchData.other_user || {
+      id: matchData.other_user_id || partnerId,
+      name: matchData.other_user_name || partnerUsername,
+      avatar: matchData.other_user_avatar || '/default-avatar.png'
+    };
 
-  // Función helper para convertir ChatListItem a FrontendChat
-convertToFrontendChat: (chatItem: ChatListItem): FrontendChat => {
+    // Crear el último mensaje como FrontendMessage si existe
+    const lastMessage = chatInfo.last_message ? {
+      id: 0, // Temporal, se actualizará cuando carguemos los mensajes
+      match_id: matchData.match_id || matchData.id,
+      sender_id: partnerId, // Asumimos que el último mensaje es del partner
+      content: chatInfo.last_message,
+      created_at: new Date().toISOString(), // Temporal
+      read: true
+    } : undefined;
+
     return {
-      id: `match-${chatItem.match_id}`,
-      matchId: chatItem.match_id,
-      userId: chatItem.other_user.id,
-      matchedOn: new Date().toISOString(),
-      lastMessage: chatItem.last_message ? {
-        id: chatItem.last_message.id,
-        match_id: chatItem.last_message.match_id,
-        sender_id: chatItem.last_message.sender_id,
-        content: chatItem.last_message.content,
-        created_at: chatItem.last_message.created_at,
-        read: chatItem.last_message.read
-      } : undefined,
-      unreadCount: chatItem.unread_count,
+      id: `match-${matchData.match_id || matchData.id}`,
+      matchId: matchData.match_id || matchData.id,
+      userId: partnerId,
+      matchedOn: matchData.created_at || new Date().toISOString(),
+      lastMessage: lastMessage,
+      unreadCount: chatInfo.unread_count,
       user: {
-        id: chatItem.other_user.id,
-        name: chatItem.other_user.name || `Usuario ${chatItem.other_user.id}`,
-        username: chatItem.other_user.username || '',
-        age: chatItem.other_user.age || 0,
-        bio: chatItem.other_user.bio || '',
-        avatar: chatItem.other_user.avatar || '/default-avatar.png',
-        gamePreferences: chatItem.other_user.gamePreferences || [],
-        onlineStatus: chatItem.other_user.onlineStatus || false,
-        location: chatItem.other_user.location || '',
-        skillLevel: chatItem.other_user.skillLevel || '',
-        favoriteGames: chatItem.other_user.favoriteGames || []
+        id: partnerId,
+        name: partnerUsername || otherUserFromMatch.name,
+        username: partnerUsername,
+        age: otherUserFromMatch.age,
+        bio: otherUserFromMatch.bio || '',
+        avatar: otherUserFromMatch.avatar || '/default-avatar.png',
+        gamePreferences: otherUserFromMatch.gamePreferences || otherUserFromMatch.game_preferences || [],
+        onlineStatus: otherUserFromMatch.online_status || otherUserFromMatch.onlineStatus || false,
+        lastOnline: otherUserFromMatch.last_online,
+        location: otherUserFromMatch.location || '',
+        skillLevel: otherUserFromMatch.skill_level || otherUserFromMatch.skillLevel || '',
+        favoriteGames: otherUserFromMatch.favoriteGames || otherUserFromMatch.favorite_games || []
       }
     };
   }
