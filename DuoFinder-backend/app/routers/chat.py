@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from sqlalchemy import asc
+from sqlalchemy import asc, desc
 from datetime import datetime
 
 from app.db.connection import get_db
@@ -38,6 +38,12 @@ class ChatMessageOut(BaseModel):
             read=bool(m.ReadChat),
         )
 
+class ChatInfo(BaseModel):
+    last_message: str | None  # El contenido del último mensaje
+    unread_count: int  # Número de mensajes no leídos
+
+    class Config:
+        orm_mode = True
 
 # ---------- Helpers ----------
 def _assert_user_in_match(db: Session, match_id: int, user_id: int) -> Matches:
@@ -51,6 +57,34 @@ def _assert_user_in_match(db: Session, match_id: int, user_id: int) -> Matches:
 
 
 # ---------- Endpoints ----------
+
+@router.get("/{match_id}/info", response_model=ChatInfo)
+def get_chat_info(
+    match_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Devuelve la información del chat: último mensaje y contador de mensajes no leídos.
+    """
+    # Verificar que el usuario esté en el match
+    _assert_user_in_match(db, match_id, current_user.ID)
+
+    # Obtener el último mensaje del chat
+    last_message = db.query(Chat).filter(Chat.MatchesID == match_id).order_by(desc(Chat.CreatedDate)).first()
+    last_message_content = last_message.ContentChat if last_message else None
+
+    # Contar los mensajes no leídos para el usuario actual
+    unread_count = db.query(Chat).filter(
+        Chat.MatchesID == match_id,
+        Chat.ReadChat == False,
+        Chat.SenderID != current_user.ID
+    ).count()
+
+    return ChatInfo(
+        last_message=last_message_content,
+        unread_count=unread_count
+    )
 
 @router.get("/{match_id}", response_model=list[ChatMessageOut])
 def get_chat(
