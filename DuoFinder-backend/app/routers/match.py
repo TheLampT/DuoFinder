@@ -340,7 +340,9 @@ def get_all_matches(
         or_(
             Matches.UserID1 == my_id,
             Matches.UserID2 == my_id
-        )
+        ),
+        Matches.LikedByUser1 == True,
+        Matches.LikedByUser2 == True
     ).all()
 
     if not matches:
@@ -377,6 +379,9 @@ def get_match_details(
     # Verificar si el usuario es parte del match (UserID1 o UserID2)
     if match.UserID1 != current_user.ID and match.UserID2 != current_user.ID:
         raise HTTPException(status_code=403, detail="You are not part of this match")
+    
+    if not match.LikedByUser1 or not match.LikedByUser2:
+        raise HTTPException(status_code=400, detail="Both users need to like each other for a match")
 
     # Devolver los detalles del match
     return {
