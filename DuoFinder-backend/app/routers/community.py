@@ -78,7 +78,7 @@ def _is_owner(user_id: int, community: Community) -> bool:
 # Endpoints
 # -----------------------
 
-@router.post("/", response_model=CommunityOut, status_code=status.HTTP_201_CREATED)
+@router.post("/community", response_model=CommunityOut, status_code=status.HTTP_201_CREATED)
 def create_community(
     payload: CommunityCreate,
     db: Session = Depends(get_db),
