@@ -75,18 +75,22 @@ def get_match_suggestions(
     
     my_id = current_user.ID
 
-    from sqlalchemy import select, or_, and_, exists
+    from sqlalchemy import or_, and_, exists
 
-    # Excluir solo usuarios donde YA HUBO like mutuo
-    mutual_swipes = select(Matches.UserID1, Matches.UserID2).where(
-        and_(
-            Matches.LikedByUser1 == True,
-            Matches.LikedByUser2 == True
+    not_swiped = ~exists().where(
+        or_(
+            and_(
+                Matches.UserID1 == my_id,
+                Matches.UserID2 == User.ID,     # <- correlacionado correctamente
+                Matches.LikedByUser1.isnot(None)
+            ),
+            and_(
+                Matches.UserID2 == my_id,
+                Matches.UserID1 == User.ID,     # <- correlacionado correctamente
+                Matches.LikedByUser2.isnot(None)
+            )
         )
-    ).subquery()
-
-    # Excluir solo usuarios donde yo ya swippeé (para no volver a mostrar el mismo)
-    swiped_subq = select(Matches.UserID2).where(Matches.UserID1 == my_id)
+    )
 
     # 1) Traer TODOS los juegos del usuario actual
     my_skills = db.query(
@@ -118,20 +122,7 @@ def get_match_suggestions(
         .filter(
             User.ID != current_user.ID,
             User.IsActive == True,
-            ~exists().where(
-                or_(
-                    and_(
-                        Matches.UserID1 == my_id,
-                        Matches.UserID2 == User.ID,
-                        Matches.LikedByUser1.isnot(None)
-                    ),
-                    and_(
-                        Matches.UserID2 == my_id,
-                        Matches.UserID1 == User.ID,
-                        Matches.LikedByUser2.isnot(None)
-                    )
-                )
-            ),
+            not_swiped
         )
         .distinct()
     )
