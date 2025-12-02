@@ -39,6 +39,7 @@ export interface Suggestion {
 }
 
 export interface UserProfile {
+  id: number;
   username: string;
   email: string;
   bio: string;
@@ -239,7 +240,22 @@ export interface FrontendChat {
   matchedOn: string;
   lastMessage?: FrontendMessage;
   unreadCount: number;
-  user: UserProfile;
+  user: MessagesUserProfile;
   isCommunity?: boolean;
   communityId?: number;
+}
+
+export interface MessagesUserProfile {
+  id: number;
+  name: string;
+  username?: string;
+  age?: number;
+  bio?: string;
+  avatar: string;
+  gamePreferences?: string[];
+  onlineStatus?: boolean;
+  lastOnline?: string;
+  location?: string;
+  skillLevel?: string;
+  favoriteGames?: string[];
 }

@@ -10,7 +10,10 @@ import {
   Match ,
   Chat ,
   UserPreferences ,
-  Message
+  Message,
+  ChatListItem,
+  FrontendMessage,
+  FrontendChat
 } from './types';
 
 // ======================= TIPOS DE COMUNIDADES =======================
@@ -34,8 +37,115 @@ export interface CommunityListDTO {
   offset: number;
 }
 
-// prefijo REAL del backend (por los archivos communitys.py)
-const COMMUNITY_BASE = '/community';
+
+// ======================= CHAT SERVICE =======================
+export const chatService = {
+  // Obtener lista de chats con información completa
+  getChats: async (): Promise<ChatListItem[]> => {
+    const response = await authFetch('/chats');
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Error fetching chats');
+    }
+
+    return await response.json();
+  },
+
+  // Obtener mensajes de un chat específico
+  getChatMessages: async (matchId: number): Promise<FrontendMessage[]> => {
+    const response = await authFetch(`/chats/${matchId}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Error fetching messages');
+    }
+
+    const messages = await response.json();
+    
+    // Convertir de API a frontend
+    return messages.map((msg: any) => ({
+      id: msg.id || msg.ID,
+      match_id: msg.match_id || msg.MatchesID,
+      sender_id: msg.sender_id || msg.SenderID,
+      content: msg.content || msg.ContentChat,
+      created_at: msg.created_at || msg.CreatedDate,
+      read: msg.read || msg.ReadChat || false
+    }));
+  },
+
+  // Enviar mensaje
+  sendMessage: async (matchId: number, content: string): Promise<FrontendMessage> => {
+    const response = await authFetch(`/chats/${matchId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ content }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Error sending message');
+    }
+
+    const message = await response.json();
+    
+    // Convertir de API a frontend
+    return {
+      id: message.id || message.ID,
+      match_id: message.match_id || message.MatchesID,
+      sender_id: message.sender_id || message.SenderID,
+      content: message.content || message.ContentChat,
+      created_at: message.created_at || message.CreatedDate,
+      read: message.read || message.ReadChat || false
+    };
+  },
+
+  // Marcar mensajes como leídos
+  markMessagesAsRead: async (matchId: number): Promise<void> => {
+    const response = await authFetch(`/chats/${matchId}/read`, {
+      method: 'PUT',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Error marking messages as read');
+    }
+  },
+
+  // Función helper para convertir ChatListItem a FrontendChat
+convertToFrontendChat: (chatItem: ChatListItem): FrontendChat => {
+    return {
+      id: `match-${chatItem.match_id}`,
+      matchId: chatItem.match_id,
+      userId: chatItem.other_user.id,
+      matchedOn: new Date().toISOString(),
+      lastMessage: chatItem.last_message ? {
+        id: chatItem.last_message.id,
+        match_id: chatItem.last_message.match_id,
+        sender_id: chatItem.last_message.sender_id,
+        content: chatItem.last_message.content,
+        created_at: chatItem.last_message.created_at,
+        read: chatItem.last_message.read
+      } : undefined,
+      unreadCount: chatItem.unread_count,
+      user: {
+        id: chatItem.other_user.id,
+        name: chatItem.other_user.name || `Usuario ${chatItem.other_user.id}`,
+        username: chatItem.other_user.username || '',
+        age: chatItem.other_user.age || 0,
+        bio: chatItem.other_user.bio || '',
+        avatar: chatItem.other_user.avatar || '/default-avatar.png',
+        gamePreferences: chatItem.other_user.gamePreferences || [],
+        onlineStatus: chatItem.other_user.onlineStatus || false,
+        location: chatItem.other_user.location || '',
+        skillLevel: chatItem.other_user.skillLevel || '',
+        favoriteGames: chatItem.other_user.favoriteGames || []
+      }
+    };
+  }
+};
 
 // ======================= API SERVICE =======================
 
