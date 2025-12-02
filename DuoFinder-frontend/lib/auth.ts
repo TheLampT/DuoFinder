@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://duofinder-1.onrender.com/api';
+const API_BASE_URL = 'https://duofinder-1.onrender.com';
 
 export interface LoginResponse {
   access_token: string;
