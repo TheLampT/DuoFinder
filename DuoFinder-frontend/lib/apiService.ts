@@ -1,21 +1,47 @@
 import { authFetch } from './auth';
-import { 
-  Suggestion, 
-  UserProfile, 
-  SwipeResponse, 
+import {
+  Suggestion,
+  UserProfile,
+  SwipeResponse,
   SwipeInput,
   UpdateProfileRequest,
-  UpdateProfileResponse ,
-  Match ,
-  Chat ,
-  UserPreferences
+  UpdateProfileResponse,
+  Match,
+  Chat,
+  UserPreferences,
 } from './types';
 
+// ======================= TIPOS DE COMUNIDADES =======================
+
+export interface CommunityDTO {
+  id: number;
+  name: string;
+  info: string | null;
+  is_public: boolean;
+  owner_user_id: number;
+}
+
+export interface MyCommunityDTO extends CommunityDTO {
+  role: string; // "owner" | "member"
+}
+
+export interface CommunityListDTO {
+  items: CommunityDTO[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+// prefijo REAL del backend (por los archivos communitys.py)
+const COMMUNITY_BASE = '/community';
+
+// ======================= API SERVICE =======================
+
 export const apiService = {
-  // === USER PROFILE (movido desde auth.ts) ===
+  // === USER PROFILE ===
   getProfile: async (): Promise<UserProfile> => {
     const response = await authFetch('/users/me');
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.detail || 'Failed to fetch profile');
@@ -24,7 +50,9 @@ export const apiService = {
     return await response.json();
   },
 
-  updateProfile: async (profileData: UpdateProfileRequest): Promise<UpdateProfileResponse> => {
+  updateProfile: async (
+    profileData: UpdateProfileRequest
+  ): Promise<UpdateProfileResponse> => {
     const response = await authFetch('/users/me', {
       method: 'PUT',
       body: JSON.stringify(profileData),
@@ -52,9 +80,14 @@ export const apiService = {
   },
 
   // === DISCOVER & MATCHING ===
-  getSuggestions: async (skip: number = 0, limit: number = 20): Promise<Suggestion[]> => {
-    const response = await authFetch(`/matches/suggestions?skip=${skip}&limit=${limit}`);
-    
+  getSuggestions: async (
+    skip: number = 0,
+    limit: number = 20
+  ): Promise<Suggestion[]> => {
+    const response = await authFetch(
+      `/matches/suggestions?skip=${skip}&limit=${limit}`
+    );
+
     if (!response.ok) {
       throw new Error('Error fetching suggestions');
     }
@@ -77,7 +110,7 @@ export const apiService = {
 
   getUserProfile: async (userId: number): Promise<UserProfile> => {
     const response = await authFetch(`/users/${userId}`);
-    
+
     if (!response.ok) {
       throw new Error('Error fetching user profile');
     }
@@ -86,9 +119,9 @@ export const apiService = {
   },
 
   // === CHAT & MATCHES ===
-  getMatches: async (): Promise<Match[]> => { // Define el tipo Match
+  getMatches: async (): Promise<Match[]> => {
     const response = await authFetch('/matches');
-    
+
     if (!response.ok) {
       throw new Error('Error fetching matches');
     }
@@ -96,9 +129,9 @@ export const apiService = {
     return response.json();
   },
 
-  getChats: async (): Promise<Chat[]> => { // Define el tipo Chat
+  getChats: async (): Promise<Chat[]> => {
     const response = await authFetch('/chats');
-    
+
     if (!response.ok) {
       throw new Error('Error fetching chats');
     }
@@ -107,7 +140,9 @@ export const apiService = {
   },
 
   // === PREFERENCES ===
-  updatePreferences: async (preferences: UserPreferences): Promise<UserPreferences> => { // Define UserPreferences
+  updatePreferences: async (
+    preferences: UserPreferences
+  ): Promise<UserPreferences> => {
     const response = await authFetch('/preferences', {
       method: 'PUT',
       body: JSON.stringify(preferences),
@@ -120,13 +155,139 @@ export const apiService = {
     return response.json();
   },
 
-  getPreferences: async (): Promise<UserPreferences> => { // Define UserPreferences
+  getPreferences: async (): Promise<UserPreferences> => {
     const response = await authFetch('/preferences');
-    
+
     if (!response.ok) {
       throw new Error('Error fetching preferences');
     }
 
     return response.json();
+  },
+
+  // ================== COMMUNITIES (BACKEND REAL) ==================
+
+// === COMUNIDADES ===
+
+getCommunities: async (): Promise<CommunityListDTO> => {
+  const response = await authFetch('/community');
+  if (!response.ok) {
+    throw new Error(`Error al obtener comunidades (${response.status})`);
   }
+  return response.json();
+},
+
+getMyCommunities: async (): Promise<MyCommunityDTO[]> => {
+  const response = await authFetch('/community/my');
+
+  if (response.status === 404) {
+    console.warn(
+      '[getMyCommunities] Endpoint /community/my no encontrado (404). ' +
+      'Devolviendo lista vacía por ahora.'
+    );
+    return [];
+  }
+
+  if (!response.ok) {
+    throw new Error(`Error al obtener mis comunidades (${response.status})`);
+  }
+
+  return response.json();
+},
+
+
+  // Crear comunidad
+  createCommunity: async (data: {
+    name: string;
+    info: string | null;
+    is_public: boolean;
+    game_ids: number[]; // de momento lo dejamos así, aunque no lo uses
+  }): Promise<CommunityDTO> => {
+    const response = await authFetch(`${COMMUNITY_BASE}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(
+        err.detail || `Error al crear comunidad (${response.status})`
+      );
+    }
+
+    return response.json();
+  },
+
+  // Actualizar comunidad
+  updateCommunity: async (
+    id: number,
+    data: {
+      name?: string;
+      info?: string | null;
+      is_public?: boolean;
+      game_ids?: number[];
+    }
+  ): Promise<CommunityDTO> => {
+    const response = await authFetch(`${COMMUNITY_BASE}/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(
+        err.detail || `Error al actualizar comunidad (${response.status})`
+      );
+    }
+
+    return response.json();
+  },
+
+  // Eliminar comunidad
+  deleteCommunity: async (id: number): Promise<{ message: string }> => {
+    const response = await authFetch(`${COMMUNITY_BASE}/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(
+        err.detail || `Error al eliminar comunidad (${response.status})`
+      );
+    }
+
+    return response.json();
+  },
+
+  // Unirse a comunidad
+  joinCommunity: async (id: number): Promise<{ message: string }> => {
+    const response = await authFetch(`${COMMUNITY_BASE}/${id}/join`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(
+        err.detail || `Error al unirse a la comunidad (${response.status})`
+      );
+    }
+
+    return response.json();
+  },
+
+  // Salir de comunidad
+  leaveCommunity: async (id: number): Promise<{ message: string }> => {
+    const response = await authFetch(`${COMMUNITY_BASE}/${id}/leave`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(
+        err.detail || `Error al salir de la comunidad (${response.status})`
+      );
+    }
+
+    return response.json();
+  },
 };
