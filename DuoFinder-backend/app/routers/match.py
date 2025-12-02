@@ -75,9 +75,16 @@ def get_match_suggestions(
     
     my_id = current_user.ID
 
-    # Subquery corregida para SQL Server
+    # Subquery corregida y extendida para evitar usuarios ya swippeados (like/dislike)
     from sqlalchemy import select
-    swiped_subq = select(Matches.UserID2).where(Matches.UserID1 == my_id).scalar_subquery()
+
+    # Usuarios que yo (UserID1) ya swippeé
+    swiped_as_1 = select(Matches.UserID2).where(Matches.UserID1 == my_id)
+    # Usuarios que me tienen como UserID2 (ya interactuaron conmigo)
+    swiped_as_2 = select(Matches.UserID1).where(Matches.UserID2 == my_id)
+
+    # Combinar ambos conjuntos y eliminar duplicados
+    swiped_subq = swiped_as_1.union(swiped_as_2).scalar_subquery()
 
     # 1) Traer TODOS los juegos del usuario actual
     my_skills = db.query(
