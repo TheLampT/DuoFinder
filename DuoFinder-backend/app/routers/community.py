@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from typing import Optional, List
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from app.db.connection import get_db
 from app.models.user import User
@@ -100,6 +101,7 @@ def create_community(
         Info=payload.info,
         Owner_user_id=current_user.ID,
         Is_public=payload.is_public,
+        Created_date=datetime.utcnow(),
     )
     db.add(c)
     db.flush()  # para obtener c.ID
