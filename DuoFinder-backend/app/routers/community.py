@@ -111,6 +111,7 @@ def create_community(
         Community_id=c.ID,
         User_id=current_user.ID,
         Role="owner",
+        Joined_at=datetime.utcnow(),
     ))
 
     # asociar juegos si viene
