@@ -125,26 +125,6 @@ export default function CommunitiesPage() {
     try {
       const mine: MyCommunityDTO[] = await apiService.getMyCommunities();
       setMyCommunities(mine);
-
-      // Sincronizamos con localStorage para que la pantalla de mensajes
-      // siga funcionando como antes (joinedCommunities).
-      if (typeof window !== 'undefined') {
-        const joined: JoinedCommunity[] = mine.map((c) => {
-          const { gameId, gameName } = detectGame(c.name, c.info ?? null);
-          return {
-            id: c.id,
-            name: c.name,
-            description: c.info ?? '',
-            gameId,
-            gameName,
-            extraGames: [],
-            members: 1,
-            logoInitials: c.name.substring(0, 2).toUpperCase(),
-            logoUrl: undefined,
-          };
-        });
-        localStorage.setItem('joinedCommunities', JSON.stringify(joined));
-      }
     } catch (err) {
       console.error('Error al obtener mis comunidades:', err);
     }
@@ -313,12 +293,6 @@ export default function CommunitiesPage() {
         setCommunities((prev) => [...prev, newCommunity]);
         await loadMyCommunities();
         syncJoinedLocalAdd(newCommunity);
-
-        router.push(
-          `/messages?communityId=${newCommunity.id}&communityName=${encodeURIComponent(
-            newCommunity.name
-          )}`
-        );
       }
     } catch (err) {
       console.error('Error al guardar comunidad:', err);
@@ -346,12 +320,6 @@ export default function CommunitiesPage() {
       await apiService.joinCommunity(community.id);
       await loadMyCommunities();
       syncJoinedLocalAdd(community);
-
-      router.push(
-        `/messages?communityId=${community.id}&communityName=${encodeURIComponent(
-          community.name
-        )}`
-      );
     } catch (err) {
       console.error('Error al unirse a comunidad:', err);
     }
@@ -558,10 +526,12 @@ export default function CommunitiesPage() {
                         <button
                           type="button"
                           className={styles.joinBtn}
-                          onClick={() => handleJoinCommunity(community)}
+                          disabled={isMember}
+                          onClick={!isMember ? () => handleJoinCommunity(community) : undefined}
                         >
-                          {isMember ? 'Ir al chat' : 'Unirme'}
+                          {isMember ? 'Miembro' : 'Unirme'}
                         </button>
+
 
                         {isMember && !isOwner && (
                           <button
@@ -653,23 +623,6 @@ export default function CommunitiesPage() {
                   onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="Contá brevemente de qué se trata la comunidad."
                 />
-              </div>
-
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="communityLogo">
-                  Logo (URL – opcional)
-                </label>
-                <input
-                  id="communityLogo"
-                  className={styles.input}
-                  type="url"
-                  value={formLogoUrl}
-                  onChange={(e) => setFormLogoUrl(e.target.value)}
-                  placeholder="https://..."
-                />
-                <span className={styles.hint}>
-                  Más adelante vamos a permitir subir imágenes.
-                </span>
               </div>
 
               <div className={styles.field}>

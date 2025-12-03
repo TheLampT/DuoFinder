@@ -179,46 +179,8 @@ const MessagesPage = () => {
         })
       );
 
-      // Cargar comunidades desde localStorage
-      let communityChats: FrontendChat[] = [];
-      if (typeof window !== 'undefined') {
-        const rawJoined = localStorage.getItem('joinedCommunities');
-        const joined: JoinedCommunity[] = rawJoined ? JSON.parse(rawJoined) : [];
-        
-        const rawMsgs = localStorage.getItem('communityMessages');
-        const allMsgs: CommunityMessages = rawMsgs ? JSON.parse(rawMsgs) : {};
-        
-        communityChats = joined.map(c => {
-          const msgs = allMsgs[c.id.toString()] || [];
-          const lastMessage = msgs.length > 0 ? msgs[msgs.length - 1] : undefined;
-          
-          return {
-            id: `community-${c.id}`,
-            matchId: 0,
-            userId: 0,
-            matchedOn: new Date().toISOString(),
-            unreadCount: 0,
-            lastMessage: lastMessage,
-            isCommunity: true,
-            communityId: c.id,
-            currentUserId,
-            user: {
-              id: 0,
-              name: `[Comunidad] ${c.name}`,
-              avatar: '/favicon.ico',
-              bio: `Comunidad de ${c.gameName}`,
-              gamePreferences: [c.gameName],
-              onlineStatus: true,
-              location: '',
-              skillLevel: 'Comunidad',
-              favoriteGames: [c.gameName]
-            }
-          };
-        });
-      }
-
       // Combinar todos los chats
-      const allChats = [...communityChats, ...chatsWithInfo]
+      const allChats = [...chatsWithInfo]
         .filter((chat): chat is FrontendChat => chat !== null)
         .sort((a, b) => {
           // Ordenar por si tiene último mensaje primero, luego por fecha
@@ -265,9 +227,7 @@ const MessagesPage = () => {
       console.log('Iniciando carga de mensajes...');
       
       try {
-        if (selectedMatch.isCommunity && selectedMatch.communityId) {
-          // ... código de comunidades ...
-        } else if (selectedMatch.matchId) {
+         if (selectedMatch.matchId) {
           console.log(`Cargando mensajes reales para match ${selectedMatch.matchId}`);
           
           // Ahora getChatMessages devuelve {partner_id, partner_username, messages}
@@ -351,9 +311,7 @@ const MessagesPage = () => {
     try {
       setSendingMessage(true);
       
-      if (selectedMatch.isCommunity && selectedMatch.communityId) {
-        // ... código de comunidades ...
-      } else if (selectedMatch.matchId) {
+       if (selectedMatch.matchId) {
         // Ahora sendMessage devuelve {message, partner_id}
         const { message: sentMessage } = await chatService.sendMessage(
           selectedMatch.matchId, 
@@ -432,46 +390,6 @@ const MessagesPage = () => {
     }
   };
 
-  const handleLeaveCommunity = () => {
-    if (!selectedMatch?.isCommunity || !selectedMatch.communityId) return;
-
-    if (
-      typeof window !== 'undefined' &&
-      !window.confirm('¿Seguro que querés salir de esta comunidad?')
-    ) {
-      return;
-    }
-
-    const communityId = selectedMatch.communityId;
-
-    // 1) Sacar de joinedCommunities
-    if (typeof window !== 'undefined') {
-      const rawJoined = localStorage.getItem('joinedCommunities');
-      const joined: JoinedCommunity[] = rawJoined ? JSON.parse(rawJoined) : [];
-      const filtered = joined.filter((c) => c.id !== communityId);
-      localStorage.setItem('joinedCommunities', JSON.stringify(filtered));
-
-      // 2) Borrar historial de mensajes de esa comunidad
-      const rawMsgs = localStorage.getItem('communityMessages');
-      const allMsgs: CommunityMessages = rawMsgs
-        ? JSON.parse(rawMsgs)
-        : {};
-      delete allMsgs[communityId.toString()];
-      localStorage.setItem('communityMessages', JSON.stringify(allMsgs));
-    }
-
-    // 3) Sacar el chat de la lista
-    setMatches((prev) =>
-      prev.filter(
-        (m) => !(m.isCommunity && m.communityId === communityId)
-      )
-    );
-
-    // 4) Reset de selección
-    setSelectedMatch(null);
-    setMessages([]);
-  };
-
   const filteredMatches = matches.filter((match) =>
     match.user.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -538,7 +456,7 @@ const MessagesPage = () => {
                       height={50}
                       className={styles.avatarImage}
                     />
-                    {match.user.onlineStatus && !match.isCommunity && (
+                    {match.user.onlineStatus && (
                       <div className={styles.onlineIndicator}></div>
                     )}
                     {match.isCommunity && (
@@ -561,9 +479,7 @@ const MessagesPage = () => {
                           ? (match.lastMessage.content.length > 30 
                               ? match.lastMessage.content.substring(0, 30) + '...'
                               : match.lastMessage.content)
-                          : (match.isCommunity
-                              ? 'Empezá la conversación...'
-                              : 'Nuevo match - ¡Decí hola!')}
+                              : 'Nuevo match - ¡Decí hola!'}
                       </p>
                       {match.unreadCount > 0 && (
                         <span className={styles.unreadCount}>
@@ -578,6 +494,7 @@ const MessagesPage = () => {
           </div>
         </div>
       )}
+      
 
       {/* Vista de chat - mostrar cuando hay chat seleccionado */}
       {showChatView && (
@@ -638,23 +555,14 @@ const MessagesPage = () => {
                 )}
               </div>
             </div>
-
-            {selectedMatch.isCommunity ? (
-              <button
-                type="button"
-                className={styles.leaveCommunityBtn}
-                onClick={handleLeaveCommunity}
-              >
-                Salir
-              </button>
-            ) : (
+             : (
               <button
                 className={styles.profileToggle}
                 onClick={() => setShowProfile(!showProfile)}
               >
                 {showProfile ? 'Chat' : 'Perfil'}
               </button>
-            )}
+            )
           </div>
 
           {/* Perfil o chat */}
@@ -741,10 +649,8 @@ const MessagesPage = () => {
                 ) : messages.length === 0 ? (
                   <div className={styles.noMessages}>
                     <p>No hay mensajes todavía</p>
-                    <p className={styles.startConversation}>
-                      {selectedMatch.isCommunity 
-                        ? '¡Sé el primero en escribir en esta comunidad!' 
-                        : '¡Iniciá la conversación!'}
+                    <p className={styles.startConversation}> 
+                        | : '¡Iniciá la conversación!'
                     </p>
                   </div>
                 ) : (
@@ -788,9 +694,7 @@ const MessagesPage = () => {
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={
-                    selectedMatch.isCommunity
-                      ? "Escribí un mensaje para la comunidad..."
-                      : "Escribí tu mensaje..."
+                   "Escribí tu mensaje..."
                   }
                   className={styles.messageInput}
                   disabled={sendingMessage}
@@ -835,7 +739,7 @@ const MessagesPage = () => {
             </svg>
           </div>
           <h2>Tus mensajes</h2>
-          <p>Seleccioná un match o comunidad para mandar un mensaje</p>
+          <p>Seleccioná un match para mandar un mensaje</p>
           <button
             onClick={() => router.push('/discover')}
             className={styles.findPartnersButton}
