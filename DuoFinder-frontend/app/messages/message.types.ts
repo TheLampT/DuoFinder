@@ -144,7 +144,7 @@ export interface ChatInfoResponse {
   partner_username: string;
   last_message?: string;
   unread_count: number;
-  image?: string;
+  partner_image?: string;
 }
 
 export interface ChatMessagesResponse {

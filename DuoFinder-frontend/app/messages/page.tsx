@@ -143,7 +143,7 @@ const MessagesPage = () => {
                 id: chatInfo.partner_id,
                 name: chatInfo.partner_username,
                 username: chatInfo.partner_username,
-                image: chatInfo.image || '/favicon.ico',
+                image: chatInfo.partner_image || '/favicon.ico',
                 avatar: match.other_user?.avatar || '/default-avatar.png',
                 bio: match.other_user?.bio || '',
                 age: match.other_user?.age,
