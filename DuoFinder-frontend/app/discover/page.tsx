@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import SwipeCard from '@/components/SwipeCard';
 import ProfileDetail from '@/components/ProfileDetail';
 import { useProfiles } from '@/hooks/useProfiles';
-import { Profile } from '@/lib/types';
+import { Profile, SwipeResponse } from '@/lib/types';
 import styles from '@/styles/pages/discover.module.css';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -21,6 +21,9 @@ const Discover: React.FC = () => {
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showNoMore, setShowNoMore] = useState(false);
+  const [showMatchModal, setShowMatchModal] = useState(false);
+  const [matchedUsername, setMatchedUsername] = useState('');
+  const [matchedAvatar, setMatchedAvatar] = useState<string | undefined>(undefined);
   const swipeCardRef = useRef<SwipeCardRef | null>(null);
 
   // Cargar más perfiles cuando queden 5
@@ -39,18 +42,34 @@ const Discover: React.FC = () => {
     }
   }, [currentIndex, profiles.length, hasMore, loading]);
 
+  // Efecto para cerrar automáticamente el modal de match después de 3 segundos
+  useEffect(() => {
+    if (showMatchModal) {
+      const timer = setTimeout(() => {
+        setShowMatchModal(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showMatchModal]);
+
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (currentIndex >= profiles.length) return;
 
     const currentProfile = profiles[currentIndex];
     console.log(`Swiped ${direction} on profile ${currentProfile.id}`);
     
-    // Registrar el swipe en la API
-    const success = await swipeProfile(currentProfile.id, direction === 'right');
+    // Registrar el swipe en la API usando tu función existente
+    const result = await swipeProfile(currentProfile.id, direction === 'right') as SwipeResponse;
     
-    if (!success) {
+    if (!result) {
       // Manejar error (podrías mostrar un toast o mensaje)
       console.error('Failed to register swipe');
+    } else if (result.message === "¡Es un match!") {
+      // Mostrar modal de match
+      setMatchedUsername(currentProfile.username);
+      setMatchedAvatar(currentProfile.image);
+      setShowMatchModal(true);
     }
 
     // Start animation
@@ -261,6 +280,30 @@ const Discover: React.FC = () => {
           onLike={handleDetailLike}
           onDislike={handleDetailDislike}
         />
+      )}
+
+      {/* Match Modal - Versión inline */}
+      {showMatchModal && (
+        <div className={styles.matchModalOverlay}>
+          <div className={styles.matchModal}>
+            <div className={styles.matchModalContent}>
+              <h2>🎉 ¡Es un match!</h2>
+              <p>Has hecho match con <strong>{matchedUsername}</strong></p>
+              {matchedAvatar && (
+                <div className={styles.matchAvatar}>
+                  <Image 
+                    src={matchedAvatar} 
+                    alt={matchedUsername}
+                    width={80}
+                    height={80}
+                    className={styles.avatarImage}
+                  />
+                </div>
+              )}
+              <p className={styles.matchMessage}>Ya pueden comenzar a chatear</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
