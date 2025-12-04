@@ -80,6 +80,10 @@ export interface UpdateProfileRequest {
     is_ranked?: boolean;
     game_rank_local_id?: number;
   }>;
+  images?: Array<{
+    url?: string;
+    is_primary?: boolean;
+  }>
 }
 
 export interface UpdateProfileResponse {

@@ -90,7 +90,7 @@ export default function ProfilePage() {
         setProfile(userProfile);
 
         // Leer imágenes del backend (tipo any para no tocar aún types.ts)
-        const images = (userProfile as any).images as
+        const images = (userProfile).images as
           | { id?: number; url: string; is_primary: boolean }[]
           | undefined;
 
@@ -384,7 +384,7 @@ function buildImagesPayload() {
       };
 
       // Payload extendido con imágenes (sin romper types)
-      const payload: any = {
+      const payload: UpdateProfileRequest = {
         ...updateData,
         images: avatarUrl
           ? [
@@ -511,7 +511,7 @@ function buildImagesPayload() {
         }),
       };
 
-      const payload: any = {
+      const payload: UpdateProfileRequest = {
         ...updateData,
         images: avatarUrl
           ? [

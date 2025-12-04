@@ -4,7 +4,7 @@
 /* eslint-disable react/no-unescaped-entities */
 
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from '@/styles/pages/messages.module.css';
 import Image from 'next/image';
@@ -143,7 +143,7 @@ const MessagesPage = () => {
                 id: chatInfo.partner_id,
                 name: chatInfo.partner_username,
                 username: chatInfo.partner_username,
-                image: match.other_user?.image || '/favicon.ico',
+                image: chatInfo.image || '/favicon.ico',
                 avatar: match.other_user?.avatar || '/default-avatar.png',
                 bio: match.other_user?.bio || '',
                 age: match.other_user?.age,
