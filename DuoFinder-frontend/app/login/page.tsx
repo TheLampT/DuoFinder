@@ -111,7 +111,7 @@ function LoginForm() {
 
         <aside
           className={styles.right}
-          style={{ backgroundImage: `url(https://picsum.photos/id/1011/1400/1000)` }}
+          style={{ backgroundImage: `url(https://plus.unsplash.com/premium_photo-1677870727801-62b1e29fbbb4?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8Z2FtZXN8ZW58MHwxfDB8fHww)` }}
           aria-hidden
         >
           <div className={styles.brandMark}>

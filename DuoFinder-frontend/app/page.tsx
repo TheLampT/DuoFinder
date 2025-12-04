@@ -6,16 +6,26 @@ import { useState, useEffect } from "react";
 import Image from 'next/image';
 
 const PHONES: string[] = [
-  "https://picsum.photos/id/1062/400/800",
-  "https://picsum.photos/id/1011/400/800",
-  "https://picsum.photos/id/1005/400/800",
-  "https://picsum.photos/id/1027/400/800",
-  "https://picsum.photos/id/1012/400/800",
-  "https://picsum.photos/id/1021/400/800",
-  "https://picsum.photos/id/1024/400/800",
-  "https://picsum.photos/id/1015/400/800",
-  "https://picsum.photos/id/1016/400/800",
-  "https://picsum.photos/id/1020/400/800",
+  //Brazo robot
+  "https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  //Play Controller
+  "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=647&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  //Teclado iluminado
+  "https://images.unsplash.com/photo-1581351123004-757df051db8e?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  //Xbox controller
+  "https://images.unsplash.com/photo-1619382581049-c87bedd3b479?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  //Dado
+  "https://images.unsplash.com/photo-1595744043037-68de3376ed59?q=80&w=627&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  //Play has no limits
+  "https://images.unsplash.com/photo-1593280359364-5242f1958068?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  //Pc gamer 
+  "https://images.unsplash.com/photo-1726442116417-de02f3116eed?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjB8fGdhbWVzfGVufDB8MXwwfHx8MA%3D%3D",
+  //Nintendo Switch
+  "https://images.unsplash.com/photo-1635514569156-ca58f1247e8d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjN8fGdhbWVzfGVufDB8MXwwfHx8MA%3D%3D",
+  //Cartas Poker
+  "https://images.unsplash.com/photo-1709532539319-7cdd32e90e24?q=80&w=688&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  //Parlante JASJDA
+  "https://plus.unsplash.com/premium_photo-1677870728084-e8be4c7cdb5c?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NzR8fGdhbWVzfGVufDB8MXwwfHx8MA%3D%3D",
 ];
 
 export default function Landing() {
