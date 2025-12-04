@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import Image from 'next/image';
+import SuccessModal from '@/components/SuccessModal'; // Adjust the path as needed
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   function validate(): string | null {
     if (!username.trim()) return 'Ingresá un nombre de usuario.';
@@ -61,8 +63,8 @@ export default function RegisterPage() {
 
       console.log('Registration successful:', result);
       
-      // Redirect to login page on success
-      router.replace('/login');
+      // Show success modal instead of immediate redirect
+      setShowSuccessModal(true);
       
     } catch (err: unknown) {
       console.error('Registration error:', err);
@@ -73,103 +75,117 @@ export default function RegisterPage() {
     }
   }
 
+  const handleModalClose = () => {
+    setShowSuccessModal(false);
+    // Redirect to login page after modal closes
+    router.replace('/login');
+  };
+
   return (
-    <div className={styles.shell}>
-      <div className={styles.card}>
-        <section className={styles.left}>
-          <div className={styles.logoRow}>
-            <Image 
-              src="/favicon.ico" 
-              alt="DuoFinder" 
-              width={40}
-              height={40}
-            />
-            <span>DuoFinder</span>
-          </div>
+    <>
+      <div className={styles.shell}>
+        <div className={styles.card}>
+          <section className={styles.left}>
+            <div className={styles.logoRow}>
+              <Image 
+                src="/favicon.ico" 
+                alt="DuoFinder" 
+                width={40}
+                height={40}
+              />
+              <span>DuoFinder</span>
+            </div>
 
-          <h1 className={styles.welcome}>Crear cuenta</h1>
-          <p className={styles.sub}>
-            Unite para encontrar tu dúo ideal y empezar a jugar.
-          </p>
+            <h1 className={styles.welcome}>Crear cuenta</h1>
+            <p className={styles.sub}>
+              Unite para encontrar tu dúo ideal y empezar a jugar.
+            </p>
 
-          {error && <div className={styles.alert}>{error}</div>}
+            {error && <div className={styles.alert}>{error}</div>}
 
-          <form className={styles.form} onSubmit={onSubmit}>
-            <label className={styles.label} htmlFor="username">Usuario</label>
-            <input
-              id="username"
-              className={styles.input}
-              type="text"
-              placeholder="Tu nick"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              maxLength={32}
-              required
-            />
+            <form className={styles.form} onSubmit={onSubmit}>
+              <label className={styles.label} htmlFor="username">Usuario</label>
+              <input
+                id="username"
+                className={styles.input}
+                type="text"
+                placeholder="Tu nick"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                maxLength={32}
+                required
+              />
 
-            <label className={styles.label} htmlFor="email">Email</label>
-            <input
-              id="email"
-              className={styles.input}
-              type="email"
-              autoComplete="email"
-              placeholder="tu@correo.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+              <label className={styles.label} htmlFor="email">Email</label>
+              <input
+                id="email"
+                className={styles.input}
+                type="email"
+                autoComplete="email"
+                placeholder="tu@correo.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
 
-            <label className={styles.label} htmlFor="password">Contraseña</label>
-            <input
-              id="password"
-              className={styles.input}
-              type="password"
-              autoComplete="new-password"
-              placeholder="••••••••"
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+              <label className={styles.label} htmlFor="password">Contraseña</label>
+              <input
+                id="password"
+                className={styles.input}
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
 
-            <label className={styles.label} htmlFor="birthdate">Fecha de nacimiento</label>
-            <input
-              id="birthdate"
-              className={styles.input}
-              type="date"
-              value={birthdate}
-              onChange={(e) => setBirthdate(e.target.value)}
-              required
-            />
+              <label className={styles.label} htmlFor="birthdate">Fecha de nacimiento</label>
+              <input
+                id="birthdate"
+                className={styles.input}
+                type="date"
+                value={birthdate}
+                onChange={(e) => setBirthdate(e.target.value)}
+                required
+              />
 
-            <button className={styles.btn} type="submit" disabled={submitting}>
-              {submitting ? 'Creando…' : 'SIGN UP'}
-            </button>
-          </form>
+              <button className={styles.btn} type="submit" disabled={submitting}>
+                {submitting ? 'Creando…' : 'SIGN UP'}
+              </button>
+            </form>
 
-          <p className={styles.small}>
-            ¿Ya tenés cuenta?{' '}
-            <Link href="/login" className={styles.link}>Iniciar sesión</Link>
-          </p>
-        </section>
+            <p className={styles.small}>
+              ¿Ya tenés cuenta?{' '}
+              <Link href="/login" className={styles.link}>Iniciar sesión</Link>
+            </p>
+          </section>
 
-        <aside
-          className={styles.right}
-          style={{ backgroundImage: `url(https://images.unsplash.com/photo-1484807352052-23338990c6c6?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)` }}
-          aria-hidden
-        >
-          <div className={styles.brandMark}>
-            <Image 
-              src="/favicon.ico" 
-              alt="DuoFinder" 
-              width={40}  // adjust as needed
-              height={40} // adjust as needed
-            />
-            <strong>DuoFinder</strong>
-            <p>Sumate y empezá a matchear en minutos.</p>
-          </div>
-        </aside>
+          <aside
+            className={styles.right}
+            style={{ backgroundImage: `url(https://images.unsplash.com/photo-1484807352052-23338990c6c6?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)` }}
+            aria-hidden
+          >
+            <div className={styles.brandMark}>
+              <Image 
+                src="/favicon.ico" 
+                alt="DuoFinder" 
+                width={40}
+                height={40}
+              />
+              <strong>DuoFinder</strong>
+              <p>Sumate y empezá a matchear en minutos.</p>
+            </div>
+          </aside>
+        </div>
       </div>
-    </div>
+
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={handleModalClose}
+        message="Cuenta creada con éxito"
+      />
+    </>
   );
 }

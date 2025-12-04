@@ -37,7 +37,7 @@ export const useProfiles = () => {
     setError(null);
 
     try {
-      const suggestions = await apiService.getSuggestions(skip, 10); // Reducir a 10
+      const suggestions = await apiService.getSuggestions(skip, 20); // Reducir a 10
       
       console.log('API Response:', {
         skip,

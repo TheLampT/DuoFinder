@@ -29,6 +29,7 @@ const Discover: React.FC = () => {
   // Cargar más perfiles cuando queden 5
   useEffect(() => {
     if (hasMore && profiles.length > 0 && currentIndex >= profiles.length - 5) {
+      console.log("loading more");
       loadMoreProfiles();
     }
   }, [currentIndex, profiles.length, hasMore, loadMoreProfiles]);
@@ -78,6 +79,7 @@ const Discover: React.FC = () => {
     // Move to next profile after animation completes
     setTimeout(() => {
       setCurrentIndex(prevIndex => prevIndex + 1);
+      console.log("currentIndex" + currentIndex);
       setIsSwiping(false);
       setIsAnimating(false);
     }, 300);
@@ -123,10 +125,12 @@ const Discover: React.FC = () => {
 
   // Resetear el índice cuando se cargan nuevos perfiles
   useEffect(() => {
-    if (currentIndex >= profiles.length && profiles.length > 0) {
-      setCurrentIndex(0);
-    }
-  }, [currentIndex, profiles.length]);
+  if (currentIndex >= profiles.length && !hasMore && !loading) {
+    // We've reached the end and there are no more profiles
+    // Show the "no more profiles" screen instead of resetting
+    console.log('Reached the end of all available profiles');
+  }
+}, [currentIndex, profiles.length, hasMore, loading]);
 
   // Mostrar loading inicial
   if (loading && profiles.length === 0) {
