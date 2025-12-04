@@ -10,7 +10,8 @@ from app.db.connection import get_db
 from app.routers.auth import get_current_user
 from app.models.user import User
 from app.models.chat import Chat
-from app.models.matches import Matches  # asegúrate de tener este modelo
+from app.models.matches import Matches  
+from app.models.user_images import UserImages
 
 router = APIRouter(prefix="/chats", tags=["chats"])
 
@@ -44,6 +45,7 @@ class ChatInfo(BaseModel):
     partner_username: str
     last_message: Optional[str]
     unread_count: int
+    partner_image: Optional[str] = None
 
 class ChatThreadOut(BaseModel):
     partner_id: int
@@ -77,7 +79,19 @@ def get_chat_info(
     partner = db.query(User.ID, User.Username).filter(User.ID == partner_id).first()
     partner_username = partner.Username if partner else "(usuario)"
 
-    # 3) Último mensaje del chat
+    img_row = (
+        db.query(UserImages)
+          .filter(
+              and_(
+                  UserImages.UserID == partner_id,
+                  UserImages.IsProfileImage == True
+              )
+          )
+          .first()
+    )
+    partner_image = img_row.ImagePath if img_row else None
+
+
     last_message_row = (
         db.query(Chat)
           .filter(Chat.MatchesID == match_id)
@@ -102,6 +116,8 @@ def get_chat_info(
         partner_username=partner_username,
         last_message=last_message_content,
         unread_count=unread_count,
+        partner_image=partner_image,
+        
     )
 
 
