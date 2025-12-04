@@ -84,12 +84,12 @@ def get_chat_info(
           .filter(
               and_(
                   UserImages.UserID == partner_id,
-                  UserImages.IsProfileImage == True
+                  UserImages.IsPrimary == True
               )
           )
           .first()
     )
-    partner_image = img_row.ImagePath if img_row else None
+    partner_image = img_row.ImageURL if img_row else None
 
 
     last_message_row = (
