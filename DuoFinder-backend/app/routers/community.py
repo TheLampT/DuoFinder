@@ -266,7 +266,8 @@ def join_community(
     new_member = CommunitysMembers(
         Community_id=community_id,
         User_id=current_user.ID,
-        Role="member"  # O el rol que quieras asignar
+        Role="member",  # O el rol que quieras asignar
+        Joined_at=datetime.utcnow(),
     )
     db.add(new_member)
     db.commit()
