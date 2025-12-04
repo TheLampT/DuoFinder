@@ -210,61 +210,56 @@ def swipe_user(
     if me == other:
         raise HTTPException(status_code=400, detail="No podés hacer swipe contra vos mismo")
 
-    # ---- pareja canónica (siempre el menor a la izquierda) ----
+    # pareja canónica
     u_low, u_high = (me, other) if me < other else (other, me)
 
-    # ---- juego: usar el provisto o inferirlo por intersección de juegos ----
+    # juego
     selected_game_id: Optional[int] = data.game_id
     if selected_game_id is None:
-        my_skills = db.query(UserGamesSkill.GameId, UserGamesSkill.IsRanked) \
+        my_skills = db.query(UserGamesSkill.GameId, UserGamesSkill.IsRanked)\
                       .filter(UserGamesSkill.UserID == me).all()
-        ot_skills = db.query(UserGamesSkill.GameId, UserGamesSkill.IsRanked) \
+        ot_skills = db.query(UserGamesSkill.GameId, UserGamesSkill.IsRanked)\
                       .filter(UserGamesSkill.UserID == other).all()
-
         my_ids = {g for g, _ in my_skills}
         ot_ids = {g for g, _ in ot_skills}
         common = my_ids & ot_ids
-
         if len(common) == 1:
             selected_game_id = next(iter(common))
         elif len(my_ids) == 1:
             selected_game_id = next(iter(my_ids))
         else:
-            raise HTTPException(
-                status_code=400,
-                detail="No se pudo inferir el juego (0 o >1 en común). Enviá game_id.",
-            )
+            raise HTTPException(status_code=400, detail="No se pudo inferir el juego. Enviá game_id.")
 
-    # ---- calcular IsRanked del match (ambos ranked en ese juego) ----
     my_ranked = db.query(UserGamesSkill.IsRanked).filter(
-        and_(UserGamesSkill.UserID == me, UserGamesSkill.GameId == selected_game_id)
+        UserGamesSkill.UserID == me, UserGamesSkill.GameId == selected_game_id
     ).scalar() or 0
     ot_ranked = db.query(UserGamesSkill.IsRanked).filter(
-        and_(UserGamesSkill.UserID == other, UserGamesSkill.GameId == selected_game_id)
+        UserGamesSkill.UserID == other, UserGamesSkill.GameId == selected_game_id
     ).scalar() or 0
     match_is_ranked = 1 if (my_ranked and ot_ranked) else 0
 
-    # ---- obtener registro existente y recordar estado previo ----
-    row = db.query(Matches).filter(
-        and_(Matches.UserID1 == u_low, Matches.UserID2 == u_high)
-    ).first()
+    # buscar match existente
+    row = db.query(Matches).filter(Matches.UserID1 == u_low, Matches.UserID2 == u_high).first()
 
-    if row:
-        prev_l1 = bool(row.LikedByUser1) if row.LikedByUser1 is not None else False
-        prev_l2 = bool(row.LikedByUser2) if row.LikedByUser2 is not None else False
-    else:
+    if not row:
+        # crear sin pisar el lado del otro: queda None
         row = Matches(
             UserID1=u_low,
             UserID2=u_high,
             MatchDate=datetime.utcnow(),
             Status=True,
             IsRanked=match_is_ranked,
-            LikedByUser1=False,   # inicializamos en False para evitar NULL
-            LikedByUser2=False,
+            LikedByUser1=None,
+            LikedByUser2=None,
         )
-        prev_l1, prev_l2 = False, False
+        db.add(row)
+        # todavía no seteamos likes, lo hacemos abajo
 
-    # ---- aplicar el like actual ----
+    # estado previo (permitir None)
+    prev_l1 = row.LikedByUser1
+    prev_l2 = row.LikedByUser2
+
+    # aplicar mi swipe SOLO a mi lado
     if me == u_low:
         row.LikedByUser1 = bool(data.like)
     else:
@@ -272,60 +267,55 @@ def swipe_user(
 
     row.IsRanked = match_is_ranked
 
-    # ---- persistir y refrescar ----
     try:
-        db.add(row)
         db.commit()
         db.refresh(row)
 
-        # estado actual
-        now_l1 = bool(row.LikedByUser1)
-        now_l2 = bool(row.LikedByUser2)
-        prev_is_match = prev_l1 and prev_l2
-        now_is_match = now_l1 and now_l2
+        # evaluar match (None no cuenta)
+        now_l1 = row.LikedByUser1 is True
+        now_l2 = row.LikedByUser2 is True
+        prev_is_match = (prev_l1 is True) and (prev_l2 is True)
+        now_is_match  = now_l1 and now_l2
 
-        # si en ESTE swipe se produjo el match, crear chat si no existe
         if now_is_match and not prev_is_match:
-            existing_chat = db.query(Chat).filter(
-                and_(Chat.MatchesID == row.ID, Chat.Status == True)
-            ).first()
-            if not existing_chat:
-                system_msg = Chat(
+            # crear mensaje sistema si no existe
+            exists_chat = db.query(Chat).filter(Chat.MatchesID == row.ID, Chat.Status == True).first()
+            if not exists_chat:
+                sysmsg = Chat(
                     MatchesID=row.ID,
-                    SenderID=me,  # o None/0 si querés marcarlo como "sistema"
+                    SenderID=me,
                     ContentChat="¡Se creó el chat por match!",
                     CreatedDate=datetime.utcnow(),
                     Status=True,
                     ReadChat=False,
                 )
-                db.add(system_msg)
+                db.add(sysmsg)
                 db.commit()
-                db.refresh(system_msg)
+                db.refresh(sysmsg)
                 return {
                     "message": "¡Es un match!",
                     "match": True,
-                    "chat_id": system_msg.ID,
+                    "chat_id": sysmsg.ID,
                     "match_id": row.ID,
                     "game_id": selected_game_id,
                     "is_ranked": bool(match_is_ranked),
                 }
 
-        # respuesta estándar cuando no hubo transición a match
         return {
             "message": "Swipe registrado/actualizado",
             "match": now_is_match,
             "match_id": row.ID,
-            "liked_by_low_high": [now_l1, now_l2],
+            "liked_by_low_high": [
+                bool(row.LikedByUser1) if row.LikedByUser1 is not None else None,
+                bool(row.LikedByUser2) if row.LikedByUser2 is not None else None,
+            ],
             "game_id": selected_game_id,
             "is_ranked": bool(match_is_ranked),
         }
-
     except Exception as e:
         db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al procesar el swipe: {str(e)}",
-        )
+        raise HTTPException(status_code=500, detail=f"Error al procesar el swipe: {e}")
+
 
 @router.get("/matches", response_model=List[Match])
 def get_all_matches(
