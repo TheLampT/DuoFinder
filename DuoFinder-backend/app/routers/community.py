@@ -273,7 +273,7 @@ def join_community(
     db.commit()
     db.refresh(new_member)
 
-    return {"message": f"User {current_user.username} successfully joined the community."}
+    return {"message": f"Te uniste a la comunidad."}
 
 @router.post("/{community_id}/leave", status_code=status.HTTP_200_OK)
 def leave_community(
@@ -298,4 +298,4 @@ def leave_community(
     db.delete(member)
     db.commit()
 
-    return {"message": f"User {current_user.username} successfully left the community."}
+    return {"message": f"Te has salido de la comunidad."}
