@@ -29,7 +29,7 @@ interface ApiGame {
   }>;
 }
 
-// Avatares fijos (solo frontend, se guardan en localStorage)
+// Avatares fijos (se persisten en frontend y ahora también se mandan al backend)
 const AVATAR_STORAGE_KEY = 'duofinder_profile_avatar';
 
 const PRESET_AVATARS = [
@@ -66,7 +66,7 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
 
-  // Avatar local (solo frontend)
+  // Avatar (frontend + sincronizado con backend)
   const [avatarId, setAvatarId] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -88,6 +88,32 @@ export default function ProfilePage() {
         }
 
         setProfile(userProfile);
+
+        // Leer imágenes del backend (tipo any para no tocar aún types.ts)
+        const images = (userProfile as any).images as
+          | { id?: number; url: string; is_primary: boolean }[]
+          | undefined;
+
+        const primaryImage =
+          images?.find((img) => img.is_primary) || images?.[0];
+
+        if (primaryImage) {
+          const logicalId =
+            primaryImage.id != null
+              ? String(primaryImage.id)
+              : primaryImage.url;
+
+          setAvatarId(logicalId);
+          setAvatarUrl(primaryImage.url);
+
+          // Persistimos también en localStorage para mantener consistencia
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(
+              AVATAR_STORAGE_KEY,
+              JSON.stringify({ id: logicalId, url: primaryImage.url })
+            );
+          }
+        }
       } catch (err: unknown) {
         console.error('Failed to load profile:', err);
         const errorMessage =
@@ -108,19 +134,22 @@ export default function ProfilePage() {
     loadProfile();
   }, [router]);
 
-  // Cargar avatar desde localStorage
+  // Cargar avatar desde localStorage (fallback cuando backend no tiene imagen)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
       const raw = localStorage.getItem(AVATAR_STORAGE_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw) as { id: string | null; url: string | null };
-      setAvatarId(parsed.id ?? null);
-      setAvatarUrl(parsed.url ?? null);
+      if (!avatarUrl) {
+        // Solo pisamos si todavía no lo seteó el backend
+        setAvatarId(parsed.id ?? null);
+        setAvatarUrl(parsed.url ?? null);
+      }
     } catch {
       // ignorar errores de parseo
     }
-  }, []);
+  }, [avatarUrl]);
 
   useEffect(() => {
     console.log('Profile updated:', profile);
@@ -276,7 +305,7 @@ export default function ProfilePage() {
     });
   }
 
-  // Selección de avatar (solo frontend)
+  // Selección de avatar
   function selectAvatar(avatar: { id: string; url: string } | null) {
     if (!editing) return;
 
@@ -293,7 +322,27 @@ export default function ProfilePage() {
       );
     }
   }
+// Construye el payload de imágenes para el backend
+function buildImagesPayload() {
+  if (!avatarUrl) {
+    // Si el usuario eligió “Sin avatar”, mandamos lista vacía
+    return [] as { id?: number; url: string; is_primary: boolean }[];
+  }
 
+  // Si quisieras conservar el id existente de la imagen primaria:
+  const existingPrimaryId =
+    profile?.images?.find((img) => img.is_primary)?.id;
+
+  return [
+    {
+      id: existingPrimaryId,  // puede ir undefined, el back no lo usa
+      url: avatarUrl,
+      is_primary: true,
+    },
+  ];
+}
+
+  // Guardado vía submit (botón "Guardar cambios")
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!editing || !profile) return;
@@ -332,9 +381,23 @@ export default function ProfilePage() {
 
           return baseData;
         }),
+        images: buildImagesPayload(),
       };
 
-      const result = await apiService.updateProfile(updateData);
+      // Payload extendido con imágenes (sin romper types)
+      const payload: any = {
+        ...updateData,
+        images: avatarUrl
+          ? [
+              {
+                url: avatarUrl,
+                is_primary: true,
+              },
+            ]
+          : undefined,
+      };
+
+      const result = await apiService.updateProfile(payload);
       setOk(result.message || 'Perfil actualizado exitosamente');
       setEditing(false);
 
@@ -409,6 +472,7 @@ export default function ProfilePage() {
     (game) => !selectedGameIds.has(game.id.toString())
   );
 
+  // Botón de "Guardar" de la barra de edición (reusa misma lógica que onSubmit)
   const handleSaveClick = async (): Promise<void> => {
     if (!editing || !profile) return;
 
@@ -448,7 +512,19 @@ export default function ProfilePage() {
         }),
       };
 
-      const result = await apiService.updateProfile(updateData);
+      const payload: any = {
+        ...updateData,
+        images: avatarUrl
+          ? [
+              {
+                url: avatarUrl,
+                is_primary: true,
+              },
+            ]
+          : undefined,
+      };
+
+      const result = await apiService.updateProfile(payload);
       setOk(result.message || 'Perfil actualizado exitosamente');
       setEditing(false);
 
@@ -586,8 +662,8 @@ export default function ProfilePage() {
                 </div>
                 <div className={styles.avatarChooser}>
                   <p className={styles.avatarText}>
-                    Elegí uno de los avatares predeterminados. Se guarda solo
-                    en esta versión de la app.
+                    Elegí uno de los avatares predeterminados. Se guardará como
+                    imagen de tu perfil.
                   </p>
                   <div className={styles.avatarOptions}>
                     {PRESET_AVATARS.map((avatar) => (
@@ -762,7 +838,7 @@ export default function ProfilePage() {
                 {avatarUrl ? (
                   <Image
                     src={avatarUrl}
-                    alt="Avatar preview"
+                    alt='Avatar preview'
                     fill
                     className={styles.previewImg}
                   />
