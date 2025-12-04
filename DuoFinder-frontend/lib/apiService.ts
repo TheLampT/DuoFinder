@@ -71,6 +71,7 @@ export const chatService = {
     partner_username: string;
     last_message?: string;
     unread_count: number;
+    image?: string;
   }> => {
     const response = await authFetch(`/chats/chats/${matchId}/info`);
     
