@@ -1,173 +1,140 @@
 // lib/types.ts
-
-// =========================
-// Imágenes de usuario
-// =========================
-
-export interface UserImage {
-  id?: number;              // ID en la tabla de imágenes del backend (opcional)
-  url: string;              // URL absoluta o relativa de la imagen
-  is_primary: boolean;      // true si es la imagen principal
+export interface User {
+  id: number;
+  email: string;
+  username: string;
+  isActive: boolean;
 }
 
-// =========================
-// Juegos del usuario
-// =========================
-
-export interface UserGame {
-  game_id: number;
-  game_name?: string;
-  skill_level: string;          // Texto libre si no es ranked (ej: "Casual", "Gold", etc.)
-  is_ranked: boolean;
-  game_rank_local_id?: number;  // ID del rango local (si es ranked)
-  rank_name?: string;           // Nombre del rango (si es ranked)
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
 }
 
-// =========================
-// Perfil de usuario
-// =========================
+// Tipos para discover/suggestions
+export interface GameSkill {
+  game: string;
+  skill: string;
+  isRanked: boolean;
+}
+
+export interface Profile {
+  id: number;
+  username: string;
+  age: number;
+  image: string;
+  bio: string;
+  gameSkill: GameSkill[];
+}
+
+export interface Suggestion {
+  id: number;
+  username: string;
+  age: number;
+  image: string;
+  bio: string;
+  game: string;
+  skill: string;
+  isRanked: boolean;
+}
 
 export interface UserProfile {
   id: number;
   username: string;
   email: string;
-
-  bio?: string | null;
-  discord?: string | null;
-  server?: string | null;
-  tracker?: string | null;
-  age?: number | null;
-
-  // Imágenes asociadas al usuario (lo que arma el backend con images_payload)
-  images?: UserImage[];
-
-  // Juegos/rangos del usuario
+  bio: string;
+  server?: string;
+  discord?: string;
+  tracker?: string;
+  age: number;
   games?: UserGame[];
-
-  // Campos extra por si el backend ya los envía
-  created_at?: string;
-  updated_at?: string;
+  images?: UserImage[];
 }
 
-// =========================
-// Update profile
-// =========================
-
-export interface UpdateProfileGame {
+export interface UserGame {
   game_id: number;
+  game_name: string;
   skill_level: string;
   is_ranked: boolean;
   game_rank_local_id?: number;
+  rank_name?: string;
 }
 
-export interface UpdateProfileImage {
-  id?: number;          // opcional, por si querés referenciar una existente
-  url: string;          // URL de la imagen
-  is_primary: boolean;  // principal o no
+export interface UserImage {
+  id: number;
+  url: string;
+  is_primary: boolean;
 }
 
 export interface UpdateProfileRequest {
-  username: string;
+  username?: string;
+  password?: string;
   bio?: string;
-  discord?: string;
   server?: string;
+  discord?: string;
   tracker?: string;
-  games?: UpdateProfileGame[];
-  // Nuevo: envío de imágenes al backend (si tus compañeros lo manejan)
-  images?: UpdateProfileImage[];
+  birthdate?: string;
+  games?: Array<{
+    game_id?: number;
+    skill_level?: string;
+    is_ranked?: boolean;
+    game_rank_local_id?: number;
+  }>;
 }
 
 export interface UpdateProfileResponse {
-  message?: string;
-  profile?: UserProfile;
+  message: string;
+  new_profile: {
+    username: string;
+    email: string;
+    bio: string;
+    server?: string;
+    discord?: string;
+    tracker?: string;
+    birthdate: string;
+  };
 }
 
-// =========================
-// Matching / Discover
-// =========================
-
-export interface Suggestion {
-  id: number;
-  username: string;
-
-  age?: number | null;
-  bio?: string | null;
-  location?: string | null;
-
-  // Imagen principal o lista de imágenes
-  avatar_url?: string | null;  // por si el backend ya arma una URL directa
-  images?: UserImage[];        // por si trae el mismo esquema que en UserProfile
-
-  games?: UserGame[];
-
-  // Otros campos que puedas tener en el backend
-  server?: string | null;
-  discord?: string | null;
-  tracker?: string | null;
-}
-
-// Lo que envía el frontend al hacer swipe
-export interface SwipeInput {
-  target_user_id: number;
-  is_like: boolean;
+export interface SwipeResponse {
+  message: string;
+  match: boolean;
+  match_id?: number;
+  chat_id?: number;
+  game_id?: number;
   is_ranked?: boolean;
 }
 
-// Respuesta del backend al hacer swipe
-export interface SwipeResponse {
-  match_created: boolean;
-  match_id?: number;
-  message?: string;
+export interface SwipeInput {
+  target_user_id: number;
+  like: boolean;
+  game_id?: number;
 }
 
-// =========================
-// Matches y chats simples (API genérica)
-// =========================
+// Tipos para auth
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+}
 
-export interface MatchUserSummary {
-  id: number;
-  name: string;
-  username?: string;
-  age?: number;
-  bio?: string | null;
-  avatar?: string | null;       // URL de avatar simplificada
-  location?: string | null;
-  online_status?: boolean;
-  last_online?: string | null;
-  skill_level?: string | null;
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
 
-  images?: UserImage[];         // por si se quiere mostrar imágenes en “match cards”
+export interface ApiError {
+  detail: string;
 }
 
 export interface Match {
-  id: number;                   // o match_id según backend
-  user1_id?: number;
-  user2_id?: number;
-  is_ranked?: boolean;
-  status?: string;
-  created_at?: string;
-
-  // Resumen del “otro usuario”
-  other_user_id?: number;
-  other_user_name?: string;
-  other_user_avatar?: string | null;
-
-  other_user?: MatchUserSummary;
-}
-
-// Chat simple (para endpoints genéricos /chats si los usás)
-export interface Chat {
   id: number;
-  match_id: number;
   user1_id: number;
   user2_id: number;
-  created_at: string;
-
-  last_message?: string | null;
+  match_date: string;
+  other_user?: UserProfile;
+  last_message?: Message;
   unread_count?: number;
 }
 
-// Mensaje genérico (para apiService.sendMessage)
 export interface Message {
   id: number;
   match_id: number;
@@ -177,57 +144,119 @@ export interface Message {
   read: boolean;
 }
 
-// =========================
-// Preferencias de usuario
-// =========================
-
-export interface UserPreferences {
-  min_age?: number;
-  max_age?: number;
-  region?: string;
-  languages?: string[];
-
-  // filtros por juego, rank, etc.
-  game_ids?: number[];
-  ranked_only?: boolean;
-
-  // cualquier otro filtro configurable
-  [key: string]: any;
+export interface Chat {
+  match_id: number;
+  other_user: UserProfile;
+  last_message?: Message;
+  unread_count: number;
 }
 
-// =========================
-// FrontendChat (usado sólo en apiService.chatService.combineMatchAndChatInfo)
-// Ojo: este NO es el mismo que importás desde ./messages/message.types
-// =========================
+export interface UserPreferences {
+  server?: string;
+  is_ranked?: boolean;
+  age_range?: {
+    min: number;
+    max: number;
+  };
+  // ... otras preferencias
+}
 
-export interface FrontendChat {
-  id: string;                           // ej: "match-123"
-  matchId: number;
-  userId: number;
-  matchedOn: string;
+export interface ChatMessage {
+  id: number;
+  match_id: number;
+  sender_id: number;
+  content: string;
+  created_at: string;
+  read: boolean;
+}
 
-  lastMessage?: {
+export interface ChatListItem {
+  match_id: number;
+  other_user: {
+    id: number;
+    name: string;
+    username: string;
+    avatar: string;
+    age?: number;
+    bio?: string;
+    onlineStatus?: boolean;
+    location?: string;
+    skillLevel?: string;
+    gamePreferences?: string[];
+    favoriteGames?: string[];
+  };
+  last_message?: {
     id: number;
     match_id: number;
     sender_id: number;
     content: string;
     created_at: string;
     read: boolean;
-    isCurrentUser: boolean;
   };
+  unread_count: number;
+}
 
+// Para matches
+export interface Match {
+  id: number;
+  user1_id: number;
+  user2_id: number;
+  match_date: string;
+  status?: string;
+}
+
+export interface ApiMessage {
+  id: number;
+  MatchesID: number;
+  SenderID: number;
+  ContentChat: string;
+  CreatedDate: string;
+  Status?: string;
+  ReadChat: boolean;
+}
+
+export interface ApiMatch {
+  ID: number;
+  UserID1: number;
+  UserID2: number;
+  MatchDate: string;
+  Status?: string;
+}
+
+// Para usar en el frontend (compatible con ambos)
+export interface FrontendMessage {
+  id: number;
+  match_id: number;
+  sender_id: number;
+  content: string;
+  created_at: string;
+  read: boolean;
+}
+
+export interface FrontendChat {
+  id: string;
+  matchId: number;
+  userId: number;
+  matchedOn: string;
+  lastMessage?: FrontendMessage;
   unreadCount: number;
+  user: MessagesUserProfile;
+  isCommunity?: boolean;
+  communityId?: number;
+  currentUserId?: number;
+}
 
-  user: {
-    id: number;
-    name: string;
-    username?: string;
-    age?: number;
-    bio?: string;
-    avatar?: string;
-    lastOnline?: string;
-    location?: string;
-  };
-
-  currentUserId: number;
+export interface MessagesUserProfile {
+  id: number;
+  name: string;
+  username?: string;
+  age?: number;
+  bio?: string;
+  avatar: string;
+  gamePreferences?: string[];
+  onlineStatus?: boolean;
+  lastOnline?: string;
+  location?: string;
+  skillLevel?: string;
+  favoriteGames?: string[];
 }

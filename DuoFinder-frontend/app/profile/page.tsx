@@ -380,8 +380,7 @@ function buildImagesPayload() {
           }
 
           return baseData;
-        }),
-        images: buildImagesPayload(),
+        })
       };
 
       // Payload extendido con imágenes (sin romper types)
