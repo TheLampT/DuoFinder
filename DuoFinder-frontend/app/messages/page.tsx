@@ -143,6 +143,7 @@ const MessagesPage = () => {
                 id: chatInfo.partner_id,
                 name: chatInfo.partner_username,
                 username: chatInfo.partner_username,
+                image: match.other_user?.image || '/favicon.ico',
                 avatar: match.other_user?.avatar || '/default-avatar.png',
                 bio: match.other_user?.bio || '',
                 age: match.other_user?.age,
@@ -168,6 +169,7 @@ const MessagesPage = () => {
               user: {
                 id: match.other_user_id || 0,
                 name: match.other_user_name || match.other_user?.name || `Usuario ${match.other_user_id || match.id}`,
+                image: match.other_user?.image || '/favicon.ico',
                 avatar: match.other_user_avatar || match.other_user?.avatar || '/default-avatar.png',
                 gamePreferences: [],
                 onlineStatus: false,

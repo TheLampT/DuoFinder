@@ -108,10 +108,10 @@ export const useProfiles = () => {
       });
       
       console.log('Swipe result:', result);
-      return true;
+      return result;
     } catch (err) {
       console.error('Error swiping user:', err);
-      return false;
+      return null;
     }
   };
 

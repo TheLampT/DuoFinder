@@ -8,6 +8,7 @@ export interface MessagesUserProfile {
   age?: number;
   bio?: string;
   avatar: string;
+  image: string;
   gamePreferences?: string[];
   onlineStatus?: boolean;
   lastOnline?: string;
@@ -130,6 +131,7 @@ export interface ApiMatchResponse {
     avatar?: string;
     age?: number;
     bio?: string;
+    image?: string;
     location?: string;
     skill_level?: string;
     online_status?: boolean;
