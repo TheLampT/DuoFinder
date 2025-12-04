@@ -453,7 +453,7 @@ const MessagesPage = () => {
                 >
                   <div className={styles.matchAvatar}>
                     <Image
-                      src={match.user.avatar || '/default-avatar.png'}
+                      src={match.user.image || '/default-avatar.png'}
                       alt={match.user.name}
                       width={50}
                       height={50}
@@ -527,7 +527,7 @@ const MessagesPage = () => {
             >
               <div className={styles.chatAvatar}>
                 <Image
-                  src={selectedMatch.user.avatar || '/default-avatar.png'}
+                  src={selectedMatch.user.image || '/default-avatar.png'}
                   alt={selectedMatch.user.name}
                   width={50}
                   height={50}
@@ -558,14 +558,6 @@ const MessagesPage = () => {
                 )}
               </div>
             </div>
-             : (
-              <button
-                className={styles.profileToggle}
-                onClick={() => setShowProfile(!showProfile)}
-              >
-                {showProfile ? 'Chat' : 'Perfil'}
-              </button>
-            )
           </div>
 
           {/* Perfil o chat */}
@@ -574,7 +566,7 @@ const MessagesPage = () => {
               <div className={styles.profileHeader}>
                 <div className={styles.profileAvatar}>
                   <Image
-                    src={selectedMatch.user.avatar || '/default-avatar.png'}
+                    src={selectedMatch.user.image || '/default-avatar.png'}
                     alt={selectedMatch.user.name}
                     width={80}
                     height={80}

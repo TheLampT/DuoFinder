@@ -142,7 +142,10 @@
 }
 
 .matchesList {
-  padding: 0.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Important for flex children */
 }
 
 .matchItem {
@@ -532,8 +535,7 @@
 }
 
 /* ==================== NO MESSAGES / NO CHATS ==================== */
-.noMessages,
-.noMatches {
+.noMessages {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -544,7 +546,22 @@
   color: #6b7280;
 }
 
-.noMessages p,
+.noMatches {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+  width: 100%;
+  max-width: 400px;
+  padding-top: 100px;
+}
 .noMatches p {
   margin-bottom: 0.5rem;
 }
@@ -688,9 +705,11 @@
   
   .matchesSidebar {
     width: 100%;
-    height: 100%;
     background: white;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
   }
   
   /* Ocultar sidebar cuando estamos en vista de chat */
