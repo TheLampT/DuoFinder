@@ -34,11 +34,11 @@ const AVATAR_STORAGE_KEY = 'duofinder_profile_avatar';
 
 const PRESET_AVATARS = [
   {
-    id: 'laptop',
+    id: 'laptop mac',
     url: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80',
   },
   {
-    id: 'keyboard',
+    id: 'visual studio',
     url: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=800&q=80',
   },
   {
@@ -46,11 +46,11 @@ const PRESET_AVATARS = [
     url: 'https://images.unsplash.com/photo-1619382581049-c87bedd3b479?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
   },
   {
-    id: 'setup',
+    id: 'Arcade',
     url: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=800&q=80',
   },
   {
-    id: 'arcade',
+    id: 'Telefono',
     url: 'https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=800&q=80',
   },
 ];

@@ -1,6 +1,9 @@
 // app/messages/page.tsx
 'use client';
 
+/* eslint-disable react/no-unescaped-entities */
+
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from '@/styles/pages/messages.module.css';
@@ -9,8 +12,6 @@ import { chatService } from '@/lib/apiService';
 import type {
   FrontendChat,
   FrontendMessage,
-  JoinedCommunity,
-  CommunityMessages,
   ApiMatchResponse,
   ChatInfoResponse
 } from './message.types';
